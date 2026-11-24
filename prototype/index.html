@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./app.css">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js"></script>
-  <script defer src="./app.js?v=0.1.6"></script>
+  <script defer src="./app.js?v=0.1.7"></script>
 </head>
 <body>
   <div class="workspace">
@@ -180,7 +180,7 @@
                   <button v-if="message.kind === 'file'" class="bubble attachment" @click="openAttachment(message)"><span class="tile"><app-icon name="FileText"></app-icon></span><span class="row-info"><strong>{{ message.text }}</strong><span>{{ message.size }}</span></span></button>
                   <button v-else-if="message.kind === 'image'" class="bubble image-bubble" aria-label="图片预览" @click="previewPicture(message)"><img :src="message.url" alt="图片"><small v-if="message.original">原图</small></button>
                   <button v-else-if="message.kind === 'voice'" class="bubble call-record" :aria-pressed="playingVoiceId === message.id" @click="playVoice(message)"><app-icon :name="playingVoiceId === message.id ? 'Mic' : 'Play'"></app-icon><span>语音消息 <small>{{ message.duration }}</small></span></button>
-                  <button v-else-if="message.kind === 'red'" class="bubble envelope" :class="{ 'envelope-seen': message.claimed }" @click="selectEnvelope(message)"><span class="packet-icon" aria-hidden="true">🧧</span><span class="envelope-message"><strong>{{ message.note || '拼手气红包' }}</strong><small>{{ message.claimed ? '已领取' : message.mine ? '发出红包' : '领取红包' }}</small></span></button>
+                  <button v-else-if="message.kind === 'red'" class="bubble envelope" :class="{ 'envelope-seen': message.claimed }" @click="selectEnvelope(message)"><span class="packet-icon" aria-hidden="true">🧧</span><span class="envelope-message"><strong>{{ redCaption(message) }}</strong><small>{{ message.claimed ? '已领取' : message.mine ? '发出红包' : '领取红包' }}</small></span></button>
                   <span v-else-if="message.kind === 'call'" class="bubble call-record"><app-icon :name="message.callType === 'video' ? 'Video' : 'Mic'"></app-icon><span>{{ message.text }}<small v-if="message.duration">通话时长 {{ message.duration }}</small></span></span>
                   <span v-else-if="message.kind === 'recalled'" class="bubble recalled">{{ message.text }}</span>
                   <div v-else class="message-content">
@@ -263,9 +263,9 @@
 
           <template v-else-if="page === 'send-red'">
             <form class="form-stack" @submit.prevent="sendRed">
-              <div class="row"><span class="grow">红包类型</span><strong>拼手气红包</strong></div>
+              <div v-if="activePerson.group" class="row"><span class="grow">红包类型</span><strong>拼手气红包</strong></div>
               <label class="labeled">红包金额<input v-model.trim="redDraft.amount" inputmode="decimal" placeholder="请输入有效金额"></label>
-              <label class="labeled">红包个数<input v-model.trim="redDraft.count" inputmode="numeric" placeholder="请输入红包个数"></label>
+              <label v-if="activePerson.group" class="labeled">红包个数<input v-model.trim="redDraft.count" inputmode="numeric" placeholder="请输入红包个数"></label>
               <label class="labeled">备注<input v-model.trim="redDraft.note" maxlength="40"></label>
               <p v-if="redError" class="error" role="alert">{{ redError }}</p>
               <button class="primary">塞钱进红包</button>
@@ -690,8 +690,8 @@
             <button class="panel-option" @click="pickFile('camera')"><app-icon name="Camera"></app-icon>相机</button>
             <button class="panel-option" @click="pickFile('file')"><app-icon name="FileText"></app-icon>文件</button>
             <button class="panel-option" @click="open('saved-messages')"><app-icon name="Pin"></app-icon>收藏</button>
-            <button v-if="activePerson.group" class="panel-option" @click="openRedComposer"><span class="packet-icon" aria-hidden="true">🧧</span>群红包</button>
-            <template v-else-if="activePerson.id !== 'support'">
+            <button v-if="canSendRed" class="panel-option" @click="openRedComposer"><span class="packet-icon" aria-hidden="true">🧧</span>{{ activePerson.group ? '群红包' : '红包' }}</button>
+            <template v-if="!activePerson.group && activePerson.id !== 'support'">
               <button class="panel-option" @click="startCall('voice')"><app-icon name="Mic"></app-icon>语音通话</button>
               <button class="panel-option" @click="startCall('video')"><app-icon name="Video"></app-icon>视频通话</button>
             </template>
@@ -810,12 +810,12 @@
           <template v-else-if="modal === 'group-member-actions'"><button class="row" @click="open('contact', managedMember.id)">个人信息</button><button class="row" @click="changeGroupMemberRole">{{ managedIsAdmin ? '取消管理员' : '设为管理员' }}</button><button class="row" @click="modal = 'remove-group-member'">移除成员</button><button class="secondary" @click="modal = ''">取消</button></template>
           <template v-else-if="modal === 'remove-group-member'"><p>{{ managedMember?.name }}</p><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="removeGroupMember">移除</button></div></template>
           <template v-else-if="modal === 'open-red'">
-            <div class="red-hero"><span class="large-red" aria-hidden="true">🧧</span><strong>{{ selectedRed.sender }}的红包</strong><p>{{ selectedRed.note || '拼手气红包' }}</p><button class="red-open" aria-label="拆开红包" @click="claimRed">开</button></div>
+            <div class="red-hero"><span class="large-red" aria-hidden="true">🧧</span><strong>{{ selectedRed.sender }}的红包</strong><p>{{ redCaption(selectedRed) }}</p><button class="red-open" aria-label="拆开红包" @click="claimRed">开</button></div>
             <button v-if="selectedRed.mine" class="text-btn" @click="modal = 'receive-red'">查看领取记录</button>
             <button class="text-btn" @click="modal = ''">关闭</button>
           </template>
           <template v-else-if="modal === 'receive-red'">
-            <div class="red-hero"><span class="large-red" aria-hidden="true">🧧</span><strong>{{ selectedRed.sender }}的红包</strong><p>{{ selectedRed.note || '拼手气红包' }}</p><span>{{ selectedRed.claimed ? '已领取' : canClaimRed(selectedRed) ? '红包金额' : '红包已被领完' }}</span><b v-if="selectedRed.mine || selectedRed.claimed" class="red-amount">¥ {{ money(selectedRed.claimed ? selectedRed.receivedCents : selectedRed.cents) }}</b><small v-if="selectedRed.claimed">已计入我的钱包</small></div>
+            <div class="red-hero"><span class="large-red" aria-hidden="true">🧧</span><strong>{{ selectedRed.sender }}的红包</strong><p>{{ redCaption(selectedRed) }}</p><span>{{ redDetailStatus(selectedRed) }}</span><b v-if="selectedRed.mine || selectedRed.claimed" class="red-amount">¥ {{ money(selectedRed.claimed ? selectedRed.receivedCents : selectedRed.cents) }}</b><small v-if="selectedRed.claimed">已计入我的钱包</small></div>
             <div><h3 class="red-list-title">领取记录</h3><p class="muted">已领 {{ selectedRed.claims.length }}/{{ selectedRed.count }} 个，共 ¥ {{ money(redReceivedTotal) }}/{{ money(selectedRed.cents) }}</p><div v-for="(entry, index) in selectedRed.claims" :key="index" class="row slim"><span class="avatar">{{ entry.name[0] }}</span><span class="grow">{{ entry.name }}</span><b>¥ {{ money(entry.cents) }}</b></div><p v-if="!selectedRed.claims.length" class="empty">暂无领取记录</p></div>
             <button v-if="canClaimRed(selectedRed)" class="primary" @click="modal = 'open-red'">领取红包</button>
             <button class="secondary" @click="modal = ''">关闭</button>

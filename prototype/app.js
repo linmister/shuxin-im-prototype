@@ -27,7 +27,7 @@ const titles = {
   invite: '我的邀请码', meeting: '会议', 'password-menu': '修改密码', password: '修改密码',
   'pay-password': '修改支付密码', settings: '通知 · 设备 · 网络', notifications: '通知', network: '网络', device: '设备',
   support: '客服', 'chat-tools': '更多', 'chat-history': '搜索',
-  'send-red': '发群红包', 'invited-people': '我邀请的人', 'forward-message': '转发到...',
+  'send-red': '发红包', 'invited-people': '我邀请的人', 'forward-message': '转发到...',
   'withdraw-request': '提现', 'withdraw-account': '提现方式',
   'meeting-create': '预约会议', 'meeting-detail': '会议详情', 'meeting-room': '会议', call: '语音通话',
   'group-info': '群组信息', 'group-announcements': '群公告', 'group-edit': '编辑群组',
@@ -228,6 +228,7 @@ createApp({
         item('09:19', false, 'time'), item('下午的评审资料整理好了吗？', true),
         item('大部分整理好了，我再核对一遍。'), item('我把目录先发你看一下。'), fileSample(),
         item('我看过目录了，按这个版本发吧。', true, 'text', { time: '09:26', delivery: 'read' }), item('09:28', false, 'time'),
+        item('红包', false, 'red', { direct: true, cents: 200, count: 1, sender: '林晓', time: '09:28', note: '辛苦了！', claims: [] }),
         item('收到，我下午把资料发给你。'),
       ],
       project: [item('会议纪要.pdf', false, 'file', { sender: '周宁', time: '09:12', size: 'PDF', url: './assets/review-sample.pdf' })],
@@ -241,6 +242,7 @@ createApp({
     const activePerson = computed(() => people.find(person => person.id === route.value.key) ??
       (route.value.key === support.id ? support : people.find(person => person.id === 'lin')));
     const activeMessages = computed(() => threads[activePerson.value.id] ?? []);
+    const canSendRed = computed(() => activePerson.value.id === route.value.key && Boolean(activePerson.value.group || activePerson.value.letter));
     const currentGroup = computed(() => groupDetails[route.value.key]);
     const isGroupOwner = computed(() => currentGroup.value?.owner === 'self');
     const isGroupParticipant = computed(() => currentGroup.value?.members.includes('self') ?? false);
@@ -262,6 +264,7 @@ createApp({
     const activeNews = computed(() => news.find(entry => entry.id === route.value.key) ?? news[0]);
     const title = computed(() => {
       if (page.value === 'chat') return activePerson.value.name;
+      if (page.value === 'send-red' && activePerson.value.group) return '发群红包';
       if (page.value === 'call' && activeCall.value) return activeCall.value.type === 'video' ? '视频通话' : '语音通话';
       if (page.value === 'withdraw-account' && accountMethod.value) return accountMethod.value.label;
       if (page.value === 'pay-password' && !payConfigured.value) return '设置支付密码';
@@ -1311,17 +1314,18 @@ createApp({
       modal.value = 'attachment';
     }
     function openRedComposer() {
-      if (!activePerson.value.group) return;
+      if (!canSendRed.value) return;
       Object.assign(redDraft, { amount: '', count: '', note: '' });
       redError.value = '';
       open('send-red', activePerson.value.id);
     }
     function sendRed() {
-      if (!activePerson.value.group) return;
+      if (!canSendRed.value) return;
+      const direct = !activePerson.value.group;
       const parts = /^(\d{1,9})(?:\.(\d{1,2}))?$/.exec(redDraft.amount.trim());
       const cents = parts ? Number(parts[1])*100 + Number((parts[2] ?? '').padEnd(2,'0')) : 0;
-      const count = Number(redDraft.count);
-      if (!/^\d+$/.test(redDraft.count) || !Number.isSafeInteger(count) || count < 1) {
+      const count = direct ? 1 : Number(redDraft.count);
+      if (!direct && (!/^\d+$/.test(redDraft.count) || !Number.isSafeInteger(count) || count < 1)) {
         redError.value = '请输入红包个数';
         return;
       }
@@ -1332,11 +1336,19 @@ createApp({
       if (cents > availableCents.value) { redError.value = '余额不足'; return; }
       availableCents.value -= cents;
       walletRedRecords.value.unshift({ id: ++messageId, label: '发出红包', cents: -cents });
-      append(item('群红包', true, 'red', { count, cents, sender: profile.nickname, note: redDraft.note.trim(), claims: [] }));
+      append(item(direct ? '红包' : '群红包', true, 'red', { direct, count, cents, sender: profile.nickname, note: redDraft.note.trim(), claims: [] }));
       back('messages');
     }
     function canClaimRed(packet) {
-      return !!packet && !packet.claimed && packet.claims.length < packet.count;
+      return !!packet && !(packet.direct && packet.mine) && !packet.claimed && packet.claims.length < packet.count;
+    }
+    function redCaption(packet) {
+      return packet.note || (packet.direct ? '红包' : '拼手气红包');
+    }
+    function redDetailStatus(packet) {
+      if (packet.claimed) return '已领取';
+      if (packet.claims.length >= packet.count) return '红包已被领完';
+      return packet.direct && packet.mine ? '待对方领取' : '红包金额';
     }
     function selectEnvelope(message) {
       selectedRed.value = message;
@@ -1870,7 +1882,7 @@ createApp({
       walletBalance, withdrawDraft, withdrawError, withdrawReceipt, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
       payoutMethods, boundAccounts, accountDraft, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
       inviteLabel, copyInviteLink, retryMessage,
-      redDraft, redError, openRedComposer, meetingError, openJoinMeeting, joinMeeting, leaveMeeting, endMeeting,
+      redDraft, redError, canSendRed, redCaption, redDetailStatus, openRedComposer, meetingError, openJoinMeeting, joinMeeting, leaveMeeting, endMeeting,
       meetingRooms, meetingDraft, meetingCreateError, currentMeeting, openMeetingCreate, createMeeting, meetingState, meetingStartTime,
       passwordDraft, passwordError, payConfigured, resetNotifications, otherDevices, endOtherDevices,
       selectDeviceToEnd, endDevice, online,
