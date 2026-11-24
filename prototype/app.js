@@ -428,7 +428,7 @@ createApp({
       'create-group': '新建群组', 'leave-group': '退出「' + activePerson.value.name + '」？',
       'add-group-members': '添加成员', 'group-member-actions': managedMember.value?.name,
       'remove-group-member': '移除成员',
-      'chat-add': '更多', 'batch-remove': `删除 ${selectedChats.size} 个聊天？`, 'chat-actions': '更多', 'subsidy-rules': '签到规则',
+      'batch-remove': `删除 ${selectedChats.size} 个聊天？`, 'chat-actions': '更多', 'subsidy-rules': '签到规则',
       'meeting-duration': '选择会议时长', 'meeting-start': '选择开始时间',
       'notification-tone': '选择提示音', 'change-password': '修改密码',
       'edit-nickname': '修改昵称',
