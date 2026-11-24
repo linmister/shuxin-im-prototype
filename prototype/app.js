@@ -55,8 +55,8 @@ const stickerPacks = [
 ];
 const profileLinks = [
   ['meeting', 'Video'], ['wallet', 'Wallet', '我的钱包'], ['native-check', 'CalendarCheck2'], ['invite', 'Ticket'],
-  ['password-menu', 'KeyRound'], ['settings', 'Settings'], ['stickers', 'Smile'],
   ['withdraw', 'CreditCard'], ['identity', 'Shield'],
+  ['password-menu', 'KeyRound'], ['settings', 'Settings'], ['stickers', 'Smile'],
 ].map(([page, icon, label]) => ({ page, icon, title: label ?? titles[page] }));
 
 const seedPeople = [
