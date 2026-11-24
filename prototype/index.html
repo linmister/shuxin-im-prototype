@@ -127,8 +127,6 @@
             </section>
             <p v-if="cycleDays" class="row slim"><span class="grow">连续签到奖励</span><b>{{ Math.min(streak, cycleDays) }} / {{ cycleDays }} 天</b></p>
             <button class="primary check-button" :class="{ signed }" :disabled="signed || checkBusy" :aria-busy="checkBusy" @click="checkIn"><app-icon v-if="signed" name="Check"></app-icon>{{ signed ? '今日已签到' : '签到' }}</button>
-            <button class="row slim" @click="open('check-records')"><span class="grow">签到记录</span><app-icon name="ChevronRight"></app-icon></button>
-            <div v-for="item in checkRecords.slice(0,2)" :key="item.date" class="row slim"><app-icon name="Check"></app-icon><span class="grow">{{ item.date }}</span><span class="muted">已签到</span></div>
           </template>
           <template v-else-if="page === 'native-check'">
             <section class="glass-card wallet-card">
@@ -321,12 +319,10 @@
 
           <template v-else-if="page === 'check-records'">
             <div class="point-filters">
-              <div class="shop-categories" role="group" aria-label="积分收支">
-                <button v-for="option in pointDirections" :key="option.id" :aria-pressed="pointDirection === option.id" @click="filterPointDirection(option.id)">{{ option.name }}</button>
-              </div>
-              <label class="point-type">积分类型
-                <select v-model="pointType"><option value="all">全部类型</option><option v-for="type in availablePointTypes" :key="type.id" :value="type.id">{{ type.name }}</option></select>
-              </label>
+              <select v-model="pointType" aria-label="积分筛选">
+                <option value="all">全部</option>
+                <option v-for="type in pointTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+              </select>
             </div>
             <component v-for="entry in shownPoints" :is="entry.order ? 'button' : 'div'" :key="entry.id" class="row" @click="entry.order && open('shop-order', entry.order)">
               <span class="row-info"><strong>{{ entry.label }}</strong><span>{{ entry.date }}</span></span>

@@ -1453,18 +1453,13 @@ createApp({
     const identitySubmitted = ref(false);
     const signedDates = computed(() => new Set(checkRecords.value.map(record => record.date)));
     const signed = computed(() => signedDates.value.has(checkDay));
-    const pointDirections = [
-      { id: 'all', name: '全部' }, { id: 'earned', name: '获取' }, { id: 'spent', name: '消耗' },
-    ];
     const pointTypes = [
-      { id: 'check', name: '签到', directions: ['earned'] },
-      { id: 'bonus', name: '长期签到奖励', directions: ['earned'] },
-      { id: 'draw', name: '幸运抽奖', directions: ['earned', 'spent'] },
-      { id: 'shop', name: '商城兑换', directions: ['spent'] },
+      { id: 'check', name: '签到' },
+      { id: 'bonus', name: '长期签到奖励' },
+      { id: 'draw', name: '幸运抽奖' },
+      { id: 'shop', name: '商城兑换' },
     ];
-    const pointDirection = ref('all');
     const pointType = ref('all');
-    const availablePointTypes = computed(() => pointTypes.filter(type => pointDirection.value === 'all' || type.directions.includes(pointDirection.value)));
     const pointsLedger = computed(() => {
       const entries = checkRecords.value.flatMap(({ date, points, bonus }) => [
         { id: 'check-' + date, date, type: 'check', label: '每日签到', delta: points },
@@ -1478,14 +1473,10 @@ createApp({
       if (draw?.cost) entries.push({ id: 'draw-cost', date: draw.date, type: 'draw', label: '幸运抽奖', delta: -draw.cost });
       return entries.sort((first, second) => second.date.localeCompare(first.date));
     });
-    const shownPoints = computed(() => pointsLedger.value.filter(entry =>
-      (pointDirection.value === 'all' || (pointDirection.value === 'earned' ? entry.delta > 0 : entry.delta < 0)) &&
-      (pointType.value === 'all' || pointType.value === entry.type)));
+    const shownPoints = computed(() => pointType.value === 'all'
+      ? pointsLedger.value
+      : pointsLedger.value.filter(entry => pointType.value === entry.type));
     const amount = computed(() => pointsLedger.value.reduce((sum, entry) => sum + entry.delta, 0));
-    function filterPointDirection(direction) {
-      pointDirection.value = direction;
-      if (!availablePointTypes.value.some(type => type.id === pointType.value)) pointType.value = 'all';
-    }
     const streak = computed(() => {
       let days = 0;
       const last = signed.value ? 0 : -1;
@@ -1887,11 +1878,11 @@ createApp({
       pendingPictures, picturePreview, sendOriginal, picturesBusy, previewPicture, removePendingPicture, sendPendingPictures,
       voiceMode, voiceElapsed, playingVoiceId, toggleVoiceMode, startVoiceGesture, stopVoiceCapture, releaseVoiceCapture, playVoice,
       meetingCode, signed, amount, streak, news, activeNews,
-      week, calendar, calendarTitle, checkRecords, checkBusy, monthCount, cycleDays, emojis, open, back, switchTab, login, logout, register,
+      week, calendar, calendarTitle, checkBusy, monthCount, cycleDays, emojis, open, back, switchTab, login, logout, register,
       walletRedRecords, redReceivedTotal, money, shopCategories, shopCategory, shownShopItems, shopProduct, shopPhoto,
       redemptions, shopOrder, redeemItem, shippingDraft, shippingError, selectRedemption, redeemPoints,
       drawPrizes, drawResult, drawBusy, drawAngle, spinWheel,
-      pointDirections, pointDirection, pointType, availablePointTypes, shownPoints, filterPointDirection,
+      pointType, pointTypes, shownPoints,
       subsidyRecords, subsidySignedDates, subsidyClaimed, subsidyStreak, subsidyCycleDays, subsidyMonthCount,
       subsidyAmount, subsidyBalance, checkInForSubsidy, claimSubsidyReward,
       identityDraft, identitySubmitted, submitIdentity,

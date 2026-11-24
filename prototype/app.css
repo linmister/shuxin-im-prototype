@@ -278,8 +278,7 @@ button.row:hover, .panel-option:hover { background-color: #eaf2fe; }
 .shop-categories button { flex: 1; font-size: 12px; color: #365481; min-height: 34px; border-radius: 8px; background: #fff; border: 1px solid #d5e4fa; }
 .shop-categories button[aria-pressed="true"] { background: #0c53c5; border-color: #0c53c5; color: #fff; font-weight: 700; }
 .point-filters { margin-top: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
-.point-type { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13px; }
-.point-type select { min-width: 0; padding: 7px 9px; border: 1px solid #c4dafa; border-radius: 8px; background: #fff; color: var(--ink); font: inherit; }
+.point-filters select { min-width: 132px; min-height: 40px; padding: 7px 10px; border: 1px solid #c4dafa; border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
 .shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .shop-card, .shop-detail, .shop-order { color: #10264c; background: #fff; border: 1px solid #d5e4fa; border-radius: 13px; overflow: hidden; }
 .shop-card { text-align: left; padding: 0; box-shadow: 0 4px 12px #113f8710; }
