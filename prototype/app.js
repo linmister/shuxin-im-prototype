@@ -1,4 +1,5 @@
 const { createApp, computed, nextTick, onMounted, reactive, ref } = Vue;
+const appVersion = 'v4.5.7';
 
 const tabs = [
   { page: 'messages', label: '聊天', icon: 'MessageCircle' },
@@ -23,7 +24,7 @@ const titles = {
   group: '国家数据集团', 'check-in': '签到', profile: '我的',
   chat: '聊天', contact: '个人信息', groups: '群组', requests: '新的朋友', 'add-friend': '搜索',
   promo: '宣传片', news: '新闻资料', 'check-records': '积分明细', 'check-rule': '签到规则',
-  'profile-edit': '编辑资料', wallet: '钱包', 'subsidy-wallet': '全民补贴钱包', 'red-records': '红包记录', withdraw: '提现方式', alipay: '支付宝',
+  'profile-edit': '编辑资料', wallet: '钱包', 'wallet-records': '资金明细', 'subsidy-wallet': '全民补贴钱包', 'red-records': '红包记录', withdraw: '提现方式', alipay: '支付宝',
   invite: '我的邀请码', meeting: '会议', 'password-menu': '修改密码', password: '修改密码',
   'pay-password': '修改支付密码', settings: '通知 · 设备 · 网络', notifications: '通知', network: '网络', device: '设备',
   support: '客服', 'chat-tools': '更多', 'chat-history': '搜索',
@@ -54,9 +55,9 @@ const stickerPacks = [
   { name: '动态爱心', glyph: '❤️', count: 18 },
 ];
 const profileLinks = [
-  ['meeting', 'Video'], ['wallet', 'Wallet', '我的钱包'], ['invite', 'Ticket'],
-  ['withdraw', 'CreditCard'], ['identity', 'Shield'],
-  ['password-menu', 'KeyRound'], ['settings', 'Settings'], ['stickers', 'Smile'],
+  ['meeting', 'Video'], ['wallet', 'Wallet', '钱包余额'],
+  ['withdraw', 'CreditCard'], ['identity', 'Shield'], ['invite', 'Ticket'],
+  ['password-menu', 'KeyRound'], ['settings', 'Settings', '通知·网络·设备'], ['stickers', 'Smile'],
 ].map(([page, icon, label]) => ({ page, icon, title: label ?? titles[page] }));
 
 const seedPeople = [
@@ -189,11 +190,6 @@ createApp({
     const inviteRequired = scenario.get('invite') !== 'optional';
     const inviteLabel = inviteRequired ? '邀请码（必填）' : '邀请码（选填）';
     const demoInviteCode = 'SX2026';
-    const invitation = new URL(location.href);
-    invitation.search = '';
-    invitation.searchParams.set('inviteCode', demoInviteCode);
-    invitation.hash = 'register';
-    const inviteUrl = invitation.href;
     let failNextSend = scenario.get('send') === 'fail-once';
     let showIncomingCall = scenario.get('call') === 'incoming';
     const page = computed(() => route.value.page);
@@ -532,7 +528,7 @@ createApp({
     }
 
     const parentPages = {
-      'red-records': 'wallet', 'subsidy-wallet': 'wallet', settings: 'profile', 'native-check': 'profile',
+      'red-records': 'wallet', 'wallet-records': 'wallet', 'subsidy-wallet': 'wallet', settings: 'profile', 'native-check': 'profile',
       invite: 'profile', 'invited-people': 'invite', 'shop-order': 'shop-orders',
       'shop-orders': 'points-shop', 'draw-records': 'lucky-draw', 'sticker-store': 'stickers', square: 'discover',
       'square-search': 'square', 'square-notices': 'square', 'square-post': 'square',
@@ -563,8 +559,9 @@ createApp({
     const boundAccounts = reactive({});
     const accountDraft = ref({});
     const accountMethod = computed(() => payoutMethods.find(method => method.id === (page.value === 'alipay' ? 'alipay' : route.value.key)));
-    const availableCents = ref(8650);
-    const walletRedRecords = ref([]);
+    const walletRecords = ref([]);
+    const walletRedRecords = computed(() => walletRecords.value.filter(record => record.kind === 'red'));
+    const availableCents = computed(() => walletRecords.value.reduce((balance, record) => balance + record.cents, 8650));
     const walletBalance = computed(() => (availableCents.value / 100).toFixed(2));
     const withdrawDraft = reactive({ amount: '', method: '', fields: {} });
     const selectedPayout = computed(() => payoutMethods.find(method => method.id === withdrawDraft.method));
@@ -1336,8 +1333,7 @@ createApp({
         return;
       }
       if (cents > availableCents.value) { redError.value = '余额不足'; return; }
-      availableCents.value -= cents;
-      walletRedRecords.value.unshift({ id: ++messageId, label: '发出红包', cents: -cents });
+      walletRecords.value.unshift({ id: ++messageId, kind: 'red', label: '发出红包', cents: -cents });
       append(item(direct ? '红包' : '群红包', true, 'red', { direct, count, cents, sender: profile.nickname, note: redDraft.note.trim(), claims: [] }));
       back('messages');
     }
@@ -1369,8 +1365,7 @@ createApp({
       packet.receivedCents = cents;
       packet.claimed = true;
       packet.claims.push({ name: profile.nickname, cents });
-      availableCents.value += cents;
-      walletRedRecords.value.unshift({ id: ++messageId, label: '领取红包', cents });
+      walletRecords.value.unshift({ id: ++messageId, kind: 'red', label: '领取红包', cents });
       modal.value = 'receive-red';
     }
     const redReceivedTotal = computed(() => selectedRed.value?.claims.reduce((sum, entry) => sum + entry.cents, 0) ?? 0);
@@ -1674,9 +1669,6 @@ createApp({
     function copyInvite() {
       return copyText(demoInviteCode, '邀请码已复制');
     }
-    function copyInviteLink() {
-      return copyText(inviteUrl, '邀请链接已复制');
-    }
     function openWithdrawal() {
       Object.assign(withdrawDraft, { amount: '', method: '', fields: {} });
       withdrawError.value = '';
@@ -1699,7 +1691,7 @@ createApp({
       if (cents > availableCents.value) { withdrawError.value = '余额不足'; return; }
       if (!selectedPayout.value) { withdrawError.value = '请选择提现方式'; return; }
       if (selectedPayout.value.fields.some(field => !withdrawDraft.fields[field.key])) return;
-      availableCents.value -= cents;
+      walletRecords.value.unshift({ id: ++messageId, kind: 'withdrawal', label: '提现', status: '审核中', cents: -cents });
       withdrawReceipt.value = (cents / 100).toFixed(2);
       withdrawError.value = '';
       modal.value = 'withdraw-success';
@@ -1853,7 +1845,7 @@ createApp({
     });
 
     return {
-      titles, title, tabs, page, parentPages, profileLinks, isTab, isAuth, authDocuments, people, requests, search, foundConversations,
+      appVersion, titles, title, tabs, page, parentPages, profileLinks, isTab, isAuth, authDocuments, people, requests, search, foundConversations,
       chatFilter, chatSelecting, selectedChats, toggleChatSelection, toggleSelectedChat, visibleChatsSelected, selectAllChats, applyChatBatch,
       conversationTarget, conversationMuted, showConversationMenu, startConversationPress, toggleConversationMute, removeConversation,
       favorites, mediaEntries, currentMedia, conversationMediaItems, contactRemarks, contactMuted, sharedGroups,
@@ -1883,7 +1875,7 @@ createApp({
       copyMessage, forwardMessage, recallMessage, deleteMessage, avatarInput, avatarPreview, pickAvatar, chooseAvatar, saveAvatar,
       walletBalance, withdrawDraft, withdrawError, withdrawReceipt, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
       payoutMethods, boundAccounts, accountDraft, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
-      inviteLabel, copyInviteLink, retryMessage,
+      inviteLabel, retryMessage,
       redDraft, redError, canSendRed, redCaption, redDetailStatus, openRedComposer, meetingError, openJoinMeeting, joinMeeting, leaveMeeting, endMeeting,
       meetingRooms, meetingDraft, meetingCreateError, currentMeeting, openMeetingCreate, createMeeting, meetingState, meetingStartTime,
       passwordDraft, passwordError, payConfigured, resetNotifications, otherDevices, endOtherDevices,
@@ -1893,7 +1885,7 @@ createApp({
       voiceMode, voiceElapsed, playingVoiceId, toggleVoiceMode, startVoiceGesture, stopVoiceCapture, releaseVoiceCapture, playVoice,
       meetingCode, signed, amount, streak, news, activeNews,
       week, calendar, calendarTitle, checkBusy, monthCount, cycleDays, emojis, open, back, switchTab, login, logout, register,
-      walletRedRecords, redReceivedTotal, money, shopCategories, shopCategory, shownShopItems, shopProduct, shopPhoto,
+      walletRecords, walletRedRecords, redReceivedTotal, money, shopCategories, shopCategory, shownShopItems, shopProduct, shopPhoto,
       redemptions, shopOrder, redeemItem, shippingDraft, shippingError, selectRedemption, redeemPoints,
       drawPrizes, drawResult, drawBusy, drawAngle, spinWheel,
       pointType, pointTypes, shownPoints,

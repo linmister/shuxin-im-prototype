@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./app.css">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js"></script>
-  <script defer src="./app.js?v=0.1.9"></script>
+  <script defer src="./app.js?v=0.1.10"></script>
 </head>
 <body>
   <div class="workspace">
@@ -31,7 +31,7 @@
             <div class="auth-links"><button type="button" class="text-btn" @click="open('login-network')">线路选择</button><button type="button" class="text-btn" @click="open('account-recovery')">找回账号密码</button></div>
             <div class="actions auth-actions"><button type="button" class="secondary" @click="open('register')">注册</button><button class="primary" type="submit">登录</button></div>
             <auth-agreement v-model="auth.agreement" page="login" @open-document="documentPage => open(documentPage)"></auth-agreement>
-            <p class="auth-version">v4.5.7</p>
+            <p class="auth-version">{{ appVersion }}</p>
           </form>
           <form v-else class="form-stack compact auth-form" @submit.prevent="register">
             <input ref="signupAvatarInput" type="file" accept="image/*" hidden @change="chooseSignupAvatar">
@@ -164,8 +164,8 @@
             </div>
             <template v-for="item in profileLinks" :key="item.page">
               <button class="row profile-row" @click="item.page === 'password-menu' ? openPasswordModal() : open(item.page)"><app-icon :name="item.icon"></app-icon><span class="grow">{{ item.title }}</span><strong v-if="item.page === 'wallet'" class="balance">¥ {{ walletBalance }}</strong><app-icon name="ChevronRight"></app-icon></button>
-              <button v-if="item.page === 'invite'" class="row profile-row" @click="copyInviteLink"><app-icon name="UserRoundPlus"></app-icon><span class="grow">邀请好友</span><app-icon name="Copy"></app-icon></button>
             </template>
+            <div class="row profile-row"><span class="grow">版本号</span><span class="muted">{{ appVersion }}</span></div>
             <button class="logout" @click="modal = 'logout'"><app-icon name="LogOut"></app-icon>退出登录</button>
           </template>
 
@@ -441,14 +441,15 @@
           </template>
           <template v-else-if="page === 'wallet'">
             <div class="glass-card wallet-card"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
+            <button class="row" @click="open('wallet-records')"><app-icon name="FileText"></app-icon><span class="grow">资金明细</span><app-icon name="ChevronRight"></app-icon></button>
             <button class="row" @click="openWithdrawal"><app-icon name="Wallet"></app-icon><span class="grow">提现</span><app-icon name="ChevronRight"></app-icon></button>
             <button class="row" @click="open('withdraw')"><app-icon name="CreditCard"></app-icon><span class="grow">提现方式</span><app-icon name="ChevronRight"></app-icon></button>
             <button class="row" @click="open('red-records')"><app-icon name="FileText"></app-icon><span class="grow">红包记录</span><app-icon name="ChevronRight"></app-icon></button>
           </template>
-          <template v-else-if="page === 'red-records'">
-            <p v-if="!walletRedRecords.length" class="empty">暂无红包记录</p>
-            <div v-for="record in walletRedRecords" :key="record.id" class="row">
-              <span class="grow">{{ record.label }}</span>
+          <template v-else-if="page === 'wallet-records' || page === 'red-records'">
+            <p v-if="!(page === 'wallet-records' ? walletRecords : walletRedRecords).length" class="empty">{{ page === 'wallet-records' ? '暂无资金明细' : '暂无红包记录' }}</p>
+            <div v-for="record in page === 'wallet-records' ? walletRecords : walletRedRecords" :key="record.id" class="row">
+              <span class="row-info"><strong>{{ record.label }}</strong><span v-if="record.status">{{ record.status }}</span></span>
               <strong class="balance">{{ record.cents < 0 ? '−' : '+' }}¥ {{ money(Math.abs(record.cents)) }}</strong>
             </div>
           </template>
