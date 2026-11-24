@@ -60,6 +60,7 @@
               <template v-if="chatSelecting"><button class="header-text" @click="toggleChatSelection">完成</button><button class="header-text" @click="selectAllChats">{{ visibleChatsSelected ? '取消全选' : '全选' }}</button></template>
               <template v-else>
                 <button class="glass-icon" aria-label="联系客服" title="联系客服" @click="open('support')"><app-icon name="Headset"></app-icon></button>
+                <button class="glass-icon" aria-label="选择聊天" @click="toggleChatSelection"><app-icon name="Check"></app-icon></button>
               </template>
             </template>
             <button v-if="page === 'check-in'" class="glass-icon" aria-label="签到规则" @click="modal = 'check-rule'"><app-icon name="CircleHelp"></app-icon></button>
@@ -729,7 +730,6 @@
             <button class="row" @click="conversationTarget.unread = conversationTarget.unread ? 0 : 1; modal = ''"><span class="grow">{{ conversationTarget.unread ? '标记为已读' : '标记为未读' }}</span><app-icon name="MessageCircle"></app-icon></button>
             <button class="row" @click="conversationTarget.pinned = !conversationTarget.pinned; modal = ''"><span class="grow">{{ conversationTarget.pinned ? '取消置顶' : '置顶' }}</span><app-icon name="Pin"></app-icon></button>
             <button class="row" @click="toggleConversationMute"><span class="grow">{{ conversationMuted(conversationTarget) ? '取消静音' : '静音' }}</span><app-icon name="Bell"></app-icon></button>
-            <button class="row" @click="modal = ''; toggleChatSelection(); toggleSelectedChat(conversationTarget.id)"><span class="grow">选择聊天</span><app-icon name="Check"></app-icon></button>
             <button class="row" @click="modal = 'remove-conversation'"><span class="grow">删除</span></button>
           </template>
           <template v-else-if="modal === 'batch-remove' || modal === 'remove-conversation'"><p>聊天将从列表中移除，但不会删除聊天记录</p><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="modal === 'batch-remove' ? applyChatBatch(true) : removeConversation()">删除</button></div></template>
