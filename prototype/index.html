@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061333">
+  <title>数信 IM · 演示原型</title>
+  <link rel="icon" href="./assets/app-icon.png" type="image/png">
+  <link rel="stylesheet" href="./app.css">
+  <script defer src="./vendor/vue.global.prod.js"></script>
+  <script defer src="./vendor/icons.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="workspace">
+    <header class="demo-caption"><img src="./assets/app-icon.png" alt=""><strong>数信 IM</strong><span>演示原型 · 本地示例数据</span></header>
+    <main id="app" class="phone" v-cloak>
+      <div class="status" aria-hidden="true"><b>9:41</b><span><app-icon name="Signal"></app-icon><app-icon name="Wifi"></app-icon><app-icon name="BatteryFull"></app-icon></span></div>
+
+      <template v-if="isAuth">
+        <header class="auth-hero" :class="{ registration: page === 'register', 'login-hero': page === 'login' }">
+          <button v-if="page === 'register'" class="glass-icon" aria-label="返回登录" @click="back('login')"><app-icon name="ChevronLeft"></app-icon></button>
+          <h1>{{ titles[page] }}</h1>
+        </header>
+        <div class="auth-surface scroll">
+          <form v-if="page === 'login'" class="form-stack compact auth-form" @submit.prevent="login">
+            <label class="field"><app-icon name="Smartphone"></app-icon><input v-model.trim="auth.account" inputmode="tel" aria-label="手机号" placeholder="手机号" autocomplete="off"></label>
+            <label class="field"><app-icon name="LockKeyhole"></app-icon><input v-model="auth.password" aria-label="密码" placeholder="密码" :type="showPassword ? 'text' : 'password'" autocomplete="off"><button type="button" class="icon-btn" :aria-label="showPassword ? '隐藏密码' : '显示密码'" @click="showPassword = !showPassword"><app-icon :name="showPassword ? 'Eye' : 'EyeOff'"></app-icon></button></label>
+            <div class="captcha-row"><label class="field"><app-icon name="ShieldCheck"></app-icon><input v-model.trim="auth.code" inputmode="numeric" maxlength="4" aria-label="验证码" placeholder="验证码" autocomplete="off"></label><button type="button" class="captcha" aria-label="刷新验证码" @click="refreshLoginCaptcha"><b>{{ loginCaptcha }}</b><app-icon name="RotateCw"></app-icon></button></div>
+            <p v-if="loginError" class="error" role="alert">{{ loginError }}</p>
+            <div class="auth-links"><button type="button" class="text-btn" @click="open('login-network')">线路选择</button><button type="button" class="text-btn" @click="open('account-recovery')">找回账号密码</button></div>
+            <div class="actions auth-actions"><button type="button" class="secondary" @click="open('register')">注册</button><button class="primary" type="submit">登录</button></div>
+            <auth-agreement v-model="auth.agreement" page="login" @open-document="documentPage => open(documentPage)"></auth-agreement>
+            <p class="auth-version">v4.5.7</p>
+          </form>
+          <form v-else class="form-stack compact auth-form" @submit.prevent="register">
+            <input ref="signupAvatarInput" type="file" accept="image/*" hidden @change="chooseSignupAvatar">
+            <button type="button" class="signup-avatar" aria-label="设置头像" @click="signupAvatarInput.click()"><img v-if="signup.avatar" :src="signup.avatar" alt=""><app-icon v-else name="UserRound"></app-icon><span><app-icon name="Camera"></app-icon></span></button>
+            <label class="field"><app-icon name="Smartphone"></app-icon><input v-model.trim="signup.phone" inputmode="tel" aria-label="手机号" placeholder="手机号" autocomplete="off"></label>
+            <label class="field"><app-icon name="UserRound"></app-icon><input v-model.trim="signup.nickname" aria-label="昵称" placeholder="昵称" autocomplete="off"></label>
+            <label class="field"><app-icon name="LockKeyhole"></app-icon><input v-model="signup.password" :type="showSignupPassword ? 'text' : 'password'" aria-label="密码" placeholder="密码（6-20位）" autocomplete="off"><button type="button" class="icon-btn" :aria-label="showSignupPassword ? '隐藏密码' : '显示密码'" @click="showSignupPassword = !showSignupPassword"><app-icon :name="showSignupPassword ? 'Eye' : 'EyeOff'"></app-icon></button></label>
+            <label class="field"><app-icon name="LockKeyhole"></app-icon><input v-model="signup.confirm" :type="showSignupConfirm ? 'text' : 'password'" aria-label="确认密码" placeholder="确认密码" autocomplete="off"><button type="button" class="icon-btn" :aria-label="showSignupConfirm ? '隐藏确认密码' : '显示确认密码'" @click="showSignupConfirm = !showSignupConfirm"><app-icon :name="showSignupConfirm ? 'Eye' : 'EyeOff'"></app-icon></button></label>
+            <label class="field"><app-icon name="Ticket"></app-icon><input v-model.trim="signup.invite" :aria-label="inviteLabel" :placeholder="inviteLabel" autocomplete="off"></label>
+            <div class="captcha-row"><label class="field"><app-icon name="ShieldCheck"></app-icon><input v-model.trim="signup.code" inputmode="numeric" maxlength="4" aria-label="验证码" placeholder="验证码" autocomplete="off"></label><button type="button" class="captcha" aria-label="刷新验证码" @click="refreshCaptcha"><b>{{ captcha }}</b><app-icon name="RotateCw"></app-icon></button></div>
+            <p v-if="registerError" class="error" role="alert">{{ registerError }}</p>
+            <auth-agreement v-model="signup.agreement" page="register" @open-document="documentPage => open(documentPage)"></auth-agreement>
+            <div class="actions auth-actions"><button type="button" class="secondary" @click="back('login')">登录</button><button class="primary" type="submit">注册</button></div>
+          </form>
+        </div>
+      </template>
+
+      <template v-else>
+        <header class="app-header" :class="{ 'detail-header': !isTab, 'chat-header': page === 'chat' }">
+          <button v-if="!isTab" class="glass-icon" aria-label="返回" @click="back(parentPages[page])"><app-icon name="ChevronLeft"></app-icon></button>
+          <div v-if="page === 'chat'" class="avatar header-avatar">{{ activePerson.avatar }}</div>
+          <h1 v-if="page === 'chat' && activePerson.group"><button class="chat-group-title" @click="open('group-info', activePerson.id)">{{ title }}<small>{{ currentGroup?.members.length || 0 }} 位成员</small></button></h1>
+          <h1 v-else>{{ page === 'messages' && chatSelecting ? (selectedChats.size ? '已选择 ' + selectedChats.size : '选择聊天') : title }}</h1>
+          <div class="header-actions">
+            <template v-if="page === 'messages'">
+              <template v-if="chatSelecting"><button class="header-text" @click="toggleChatSelection">完成</button><button class="header-text" @click="selectAllChats">{{ visibleChatsSelected ? '取消全选' : '全选' }}</button></template>
+              <template v-else>
+                <button class="glass-icon" aria-label="联系客服" title="联系客服" @click="open('support')"><app-icon name="Headset"></app-icon></button>
+                <button class="glass-icon" aria-label="发现" @click="open('discover')"><app-icon name="Landmark"></app-icon></button>
+                <button class="glass-icon" aria-label="选择聊天" @click="toggleChatSelection"><app-icon name="Check"></app-icon></button>
+                <button class="glass-icon" aria-label="更多" @click="modal = 'chat-add'"><app-icon name="Plus"></app-icon></button>
+              </template>
+            </template>
+            <button v-if="page === 'check-in'" class="glass-icon" aria-label="签到规则" @click="modal = 'check-rule'"><app-icon name="CircleHelp"></app-icon></button>
+            <button v-if="page === 'native-check'" class="header-text" @click="modal = 'subsidy-rules'"><app-icon name="CircleHelp"></app-icon>规则</button>
+            <button v-if="page === 'chat'" class="glass-icon" aria-label="搜索" @click="open('chat-history', activePerson.id)"><app-icon name="Search"></app-icon></button>
+            <button v-if="page === 'chat'" class="glass-icon" aria-label="更多" @click="activePerson.group ? modal = 'chat-actions' : open('chat-tools',activePerson.id)"><app-icon name="Ellipsis"></app-icon></button>
+            <button v-if="page === 'groups'" class="glass-icon" aria-label="新建群组" @click="openGroupCreation"><app-icon name="Plus"></app-icon></button>
+            <template v-if="page === 'square'">
+              <button class="glass-icon" aria-label="发布动态" @click="openSquarePost"><app-icon name="Plus"></app-icon></button>
+              <button class="glass-icon" aria-label="动态通知" @click="open('square-notices')"><app-icon name="Bell"></app-icon></button>
+              <button class="glass-icon" aria-label="搜索" @click="squareQuery = ''; open('square-search')"><app-icon name="Search"></app-icon></button>
+            </template>
+            <button v-if="page === 'square-post'" class="header-text" :disabled="!squareDraft.text.trim() && !squareDraft.attachment" @click="publishSquarePost">发布</button>
+          </div>
+        </header>
+
+        <div v-if="page === 'messages' || page === 'contacts'" class="search-wrap">
+          <label class="field search"><app-icon name="Search"></app-icon><input v-model="search" aria-label="搜索" placeholder="搜索"></label>
+          <div v-if="page === 'messages'" class="section-tabs chat-category-tabs" role="group" aria-label="聊天分类">
+            <button v-for="[value, label] in [['all','全部'],['contact','联系人'],['group','群组']]" :key="value" :aria-pressed="chatFilter === value" @click="chatFilter = value">{{ label }}</button>
+          </div>
+        </div>
+        <div v-if="page === 'settings'" class="section-tabs settings-tabs" role="group" aria-label="通知·设备·网络">
+          <button v-for="section in settingsTabs" :key="section" :aria-pressed="settingsSection === section" @click="settingsSection = section">{{ titles[section] }}</button>
+        </div>
+
+        <div class="surface scroll" :class="{ 'chat-surface': page === 'chat', 'group-surface': page === 'group' }" ref="surface">
+          <template v-if="page === 'messages'">
+            <button v-for="person in foundConversations" :key="person.id" class="row conversation" :class="{ pinned: person.pinned, 'chat-selected': selectedChats.has(person.id) }" :aria-pressed="chatSelecting ? selectedChats.has(person.id) : undefined" :aria-haspopup="chatSelecting ? undefined : 'dialog'" @click="!modal && (chatSelecting ? toggleSelectedChat(person.id) : enterChat(person.id))" @contextmenu.prevent="showConversationMenu(person)" @keydown.shift.f10.prevent="showConversationMenu(person)" @pointerdown="startConversationPress(person, $event)" @pointerup="cancelMessagePress" @pointercancel="cancelMessagePress" @pointerleave="cancelMessagePress" @pointermove="moveMessagePress">
+              <span v-if="chatSelecting" class="chat-select-indicator">{{ selectedChats.has(person.id) ? '✓' : '' }}</span>
+              <span class="avatar" :class="[person.color,{ squared: person.group }]"><img v-if="person.avatarImage" :src="person.avatarImage" alt=""><app-icon v-else-if="person.group" name="UsersRound"></app-icon><template v-else>{{ person.avatar }}</template></span>
+              <span class="row-info"><strong>{{ person.name }} <app-icon v-if="person.pinned" name="Pin"></app-icon><span v-if="conversationMuted(person)" role="img" aria-label="已静音"><app-icon name="Bell"></app-icon></span></strong><span>{{ lastMessage(person.id) }}</span></span>
+              <span class="row-meta"><span>{{ person.time }}</span><b v-if="person.unread" class="badge">{{ person.unread }}</b></span>
+            </button>
+            <p v-if="!foundConversations.length" class="empty">{{ search ? '无搜索结果' : '暂无消息' }}</p>
+          </template>
+
+          <template v-else-if="page === 'contacts'">
+            <div v-if="!search" class="contact-actions">
+              <button @click="open('requests')"><span class="tile"><app-icon name="UserRoundPlus"></app-icon></span>新的朋友</button>
+              <button @click="open('add-friend')"><span class="tile"><app-icon name="Search"></app-icon></span>添加好友</button>
+              <button @click="openGroupCreation"><span class="tile teal"><app-icon name="UsersRound"></app-icon></span>新建群组</button>
+            </div>
+            <div v-for="section in contactSections" :key="section.letter" class="contact-group">
+              <div class="letter">{{ section.letter }}</div>
+              <button v-for="person in section.people" :key="person.id" class="row slim" @click="open('contact',person.id)"><span class="avatar" :class="person.color">{{ person.avatar }}</span><span class="grow">{{ person.name }}</span></button>
+            </div>
+            <div v-if="!contactSections.length" class="empty"><strong>{{ search ? '无搜索结果' : '还没有联系人' }}</strong><p v-if="!search">点击右上角添加新朋友</p></div>
+          </template>
+
+          <template v-else-if="page === 'group'">
+            <button class="promo" @click="open('promo')"><strong>宣传片</strong><span><app-icon name="Play"></app-icon></span></button>
+            <section class="intro"><h2>国家数据集团介绍</h2><p>聚焦数据资源开发利用，推动数据要素流通与产业协同，服务数字经济发展。</p></section>
+            <section class="news"><h2>新闻资料</h2>
+              <button v-for="item in news" :key="item.id" class="row" @click="open('news',item.id)"><img :src="item.image" alt=""><span class="row-info"><strong>{{ item.title }}</strong><span>{{ item.date }}</span></span><app-icon name="ChevronRight"></app-icon></button>
+            </section>
+          </template>
+
+          <template v-else-if="page === 'check-in'">
+            <button class="glass-card check-summary" @click="open('check-records')"><span><span>我的积分</span><strong>{{ amount }}</strong><small>积分明细 <app-icon name="ChevronRight"></app-icon></small></span><span><span>连续签到</span><strong>{{ streak }}<small>天</small></strong></span></button>
+            <section class="calendar">
+              <div class="calendar-head"><strong>{{ calendarTitle }}</strong><button class="icon-btn" aria-label="上月" @click="viewMonth(-1)"><app-icon name="ChevronLeft"></app-icon></button><button class="icon-btn" aria-label="下月" @click="viewMonth(1)"><app-icon name="ChevronRight"></app-icon></button></div>
+              <div class="calendar-grid"><span v-for="day in week" :key="day" class="weekday">{{ day }}</span><span v-for="day in calendar" :key="day.key" :class="{ marked: day.signed, today: day.today }">{{ day.number || '' }}</span></div>
+              <p class="check-month"><span>本月签到</span><b>{{ monthCount }} 天</b></p>
+            </section>
+            <p v-if="cycleDays" class="row slim"><span class="grow">连续签到奖励</span><b>{{ Math.min(streak, cycleDays) }} / {{ cycleDays }} 天</b></p>
+            <button class="primary check-button" :class="{ signed }" :disabled="signed || checkBusy" :aria-busy="checkBusy" @click="checkIn"><app-icon v-if="signed" name="Check"></app-icon>{{ signed ? '今日已签到' : '签到' }}</button>
+            <button class="row slim" @click="open('check-records')"><span class="grow">签到记录</span><app-icon name="ChevronRight"></app-icon></button>
+            <div v-for="item in checkRecords.slice(0,2)" :key="item.date" class="row slim"><app-icon name="Check"></app-icon><span class="grow">{{ item.date }}</span><span class="muted">已签到</span></div>
+          </template>
+          <template v-else-if="page === 'native-check'">
+            <section class="glass-card wallet-card">
+              <span>{{ subsidyClaimed ? '今日已签到' : '今日还未签到' }}</span>
+              <strong>{{ subsidyStreak }} 天</strong><span>连续签到</span>
+              <button class="secondary" :disabled="subsidyClaimed" @click="checkInForSubsidy">签到</button>
+              <span>本周期已签 {{ subsidyCycleDays }} / 30 天</span>
+              <button v-if="subsidyCycleDays === 30" class="secondary" @click="claimSubsidyReward">领取 30 天签到奖励</button>
+              <span v-else>再签 {{ 30 - subsidyCycleDays }} 天得 3000 元</span>
+            </section>
+            <div class="actions"><div class="row"><span class="grow">累计签到</span>{{ subsidySignedDates.size }} 天</div><div class="row"><span class="grow">本月签到</span>{{ subsidyMonthCount }} 天</div></div>
+            <section class="calendar">
+              <div class="calendar-head"><strong>{{ calendarTitle }}</strong><button class="icon-btn" aria-label="上月" @click="viewMonth(-1)"><app-icon name="ChevronLeft"></app-icon></button><button class="icon-btn" aria-label="下月" @click="viewMonth(1)"><app-icon name="ChevronRight"></app-icon></button></div>
+              <div class="calendar-grid"><span v-for="day in week" :key="day" class="weekday">{{ day }}</span><span v-for="day in calendar" :key="day.key" :class="{ marked: day.signed, today: day.today }">{{ day.number || '' }}</span></div>
+            </section>
+            <button class="row" @click="open('subsidy-wallet')"><span class="grow">补贴明细</span><app-icon name="ChevronRight"></app-icon></button>
+          </template>
+
+          <template v-else-if="page === 'profile'">
+            <div class="glass-card profile-card"><button class="personal" @click="editProfile"><span class="avatar"><img v-if="profile.avatar" :src="profile.avatar" alt=""><template v-else>{{ profile.nickname[0] }}</template></span><span class="row-info"><strong>{{ profile.nickname }}</strong><span>{{ profile.bio || '个性签名' }}</span></span></button><button class="glass-icon" aria-label="修改昵称" @click="openNicknameEditor"><app-icon name="Pencil"></app-icon></button><button class="glass-icon" aria-label="二维码" @click="open('profile-qr')"><app-icon name="Scan"></app-icon></button></div>
+            <div class="profile-shortcuts">
+              <button @click="open('points-shop')"><span class="tile"><app-icon name="Coins"></app-icon></span>积分商城</button>
+              <button @click="open('lucky-draw')"><span class="tile"><app-icon name="Ticket"></app-icon></span>幸运抽奖</button>
+            </div>
+            <template v-for="item in profileLinks" :key="item.page">
+              <button class="row profile-row" @click="item.page === 'password-menu' ? openPasswordModal() : open(item.page)"><app-icon :name="item.icon"></app-icon><span class="grow">{{ item.title }}</span><strong v-if="item.page === 'wallet'" class="balance">¥ {{ walletBalance }}</strong><app-icon name="ChevronRight"></app-icon></button>
+              <button v-if="item.page === 'invite'" class="row profile-row" @click="copyInviteLink"><app-icon name="UserRoundPlus"></app-icon><span class="grow">邀请好友</span><app-icon name="Copy"></app-icon></button>
+            </template>
+            <button class="logout" @click="modal = 'logout'"><app-icon name="LogOut"></app-icon>退出登录</button>
+          </template>
+
+          <template v-else-if="page === 'chat'">
+            <div v-for="message in activeMessages" :key="message.id" class="message-line" :class="{ mine: message.mine, timestamp: message.kind === 'time', 'message-selecting': selectingMessages && message.kind !== 'time', 'message-selected': selectedMessageIds.has(message.id) }">
+              <span v-if="message.kind === 'time'">{{ message.text }}</span>
+              <template v-else>
+                <button v-if="selectingMessages" type="button" class="message-select-button" :aria-label="'选择消息 ' + message.text" :aria-pressed="selectedMessageIds.has(message.id)" @click="toggleMessageSelection(message.id)"><span aria-hidden="true">{{ selectedMessageIds.has(message.id) ? '✓' : '' }}</span></button>
+                <span class="avatar"><img v-if="message.mine && profile.avatar" :src="profile.avatar" alt=""><template v-else>{{ message.mine ? profile.nickname[0] : (message.sender?.[0] || activePerson.avatar) }}</template></span>
+                <div class="message-stack" :inert="selectingMessages || undefined">
+                  <span v-if="activePerson.group && !message.mine && message.sender" class="message-sender">{{ message.sender }}</span>
+                  <button v-if="message.kind === 'file'" class="bubble attachment" @click="openAttachment(message)"><span class="tile"><app-icon name="FileText"></app-icon></span><span class="row-info"><strong>{{ message.text }}</strong><span>{{ message.size }}</span></span></button>
+                  <button v-else-if="message.kind === 'image'" class="bubble image-bubble" aria-label="图片预览" @click="previewPicture(message)"><img :src="message.url" alt="图片"><small v-if="message.original">原图</small></button>
+                  <button v-else-if="message.kind === 'voice'" class="bubble call-record" :aria-pressed="playingVoiceId === message.id" @click="playVoice(message)"><app-icon :name="playingVoiceId === message.id ? 'Mic' : 'Play'"></app-icon><span>语音消息 <small>{{ message.duration }}</small></span></button>
+                  <button v-else-if="message.kind === 'red'" class="bubble envelope" :class="{ 'envelope-seen': message.claimed }" @click="selectEnvelope(message)"><span class="packet-icon" aria-hidden="true">🧧</span><span class="envelope-message"><strong>{{ message.note || '拼手气红包' }}</strong><small>{{ message.claimed ? '已领取' : message.mine ? '发出红包' : '领取红包' }}</small></span></button>
+                  <span v-else-if="message.kind === 'call'" class="bubble call-record"><app-icon :name="message.callType === 'video' ? 'Video' : 'Mic'"></app-icon><span>{{ message.text }}<small v-if="message.duration">通话时长 {{ message.duration }}</small></span></span>
+                  <span v-else-if="message.kind === 'recalled'" class="bubble recalled">{{ message.text }}</span>
+                  <div v-else class="message-content">
+                    <span class="bubble actionable" tabindex="0" aria-haspopup="dialog" @contextmenu.prevent="showMessageMenu(message)" @keydown.shift.f10.prevent="showMessageMenu(message)" @pointerdown="startMessagePress(message, $event)" @pointerup="cancelMessagePress" @pointercancel="cancelMessagePress" @pointerleave="cancelMessagePress" @pointermove="moveMessagePress"><span v-if="message.reply" class="message-quote"><strong>{{ message.reply.author }}</strong><span>{{ message.reply.text }}</span></span>{{ message.text }}</span>
+                    <span v-if="message.delivery === 'sending'" class="delivery-pending" role="status" aria-label="发送"></span>
+                    <button v-if="message.delivery === 'failed'" class="delivery-failed" aria-label="重试" @click="retryMessage(message)">发送失败，请重试</button>
+                  </div>
+                  <div v-if="message.time" class="message-meta">
+                    <time>{{ message.time }}</time>
+                    <span v-if="message.mine && message.kind === 'text' && (message.delivery === 'sent' || message.delivery === 'read')" class="message-sent" :class="{ 'message-read': message.delivery === 'read' }" role="img" :aria-label="message.delivery === 'read' ? '已读' : '已发送'"><app-icon name="Check"></app-icon><app-icon v-if="message.delivery === 'read'" name="Check"></app-icon></span>
+                  </div>
+                  <div v-if="message.reactions?.length" class="message-reaction-chips"><span v-for="reaction in message.reactions" :key="reaction.glyph" role="img" :aria-label="'表情回应 ' + reaction.label">{{ reaction.glyph }}</span></div>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <template v-else-if="page === 'call'">
+            <div v-if="activeCall" class="call-stage glass-card">
+              <span class="avatar" :class="activePerson.color">{{ activePerson.avatar }}</span>
+              <h2>{{ activePerson.name }}</h2>
+              <p role="status">{{ activeCall.phase === 'calling' ? '呼叫中' : activeCall.phase === 'connected' ? '通话中' : title }}</p>
+              <p v-if="activeCall.phase === 'connected'" class="call-duration">{{ callDuration }}</p>
+            </div>
+            <div v-if="activeCall?.phase === 'incoming'" class="meeting-actions">
+              <button class="secondary" @click="finishCall('已拒绝')">拒绝</button><button class="primary" @click="connectCall">接听</button>
+            </div>
+            <button v-else-if="activeCall?.phase === 'calling'" class="logout" @click="finishCall('呼叫已取消')">取消</button>
+            <template v-else-if="activeCall?.phase === 'connected'">
+              <div class="meeting-actions">
+                <button class="secondary call-control" :aria-pressed="activeCall.muted" @click="activeCall.muted = !activeCall.muted"><app-icon name="Mic"></app-icon>静音</button>
+                <button v-if="activeCall.type === 'video'" class="secondary call-control" :aria-pressed="!activeCall.cameraEnabled" @click="activeCall.cameraEnabled = !activeCall.cameraEnabled"><app-icon name="Video"></app-icon>摄像头</button>
+              </div>
+              <button class="logout" @click="finishCall('通话结束')">挂断</button>
+            </template>
+            <p v-else class="empty">通话结束</p>
+          </template>
+
+          <template v-else-if="page === 'forward-message'">
+            <button v-for="person in forwardTargets" :key="person.id" class="row" @click="forwardMessage(person)"><span class="avatar" :class="person.color">{{ person.avatar }}</span><span class="grow">{{ person.name }}</span><app-icon name="ChevronRight"></app-icon></button>
+            <p v-if="!forwardTargets.length" class="empty">暂无可转发的会话</p>
+          </template>
+
+          <template v-else-if="page === 'group-info' && currentGroup">
+            <div class="glass-card group-profile"><div class="avatar squared"><img v-if="activePerson.avatarImage" :src="activePerson.avatarImage" alt=""><app-icon v-else name="UsersRound"></app-icon></div><div class="row-info"><strong>{{ activePerson.name }}</strong><span>{{ currentGroup.members.length }} 位成员</span></div></div>
+            <div class="row"><span>群名称</span><strong>{{ activePerson.name }}</strong></div>
+            <div class="row"><span>群介绍</span><span class="muted">暂无简介</span></div>
+            <div class="row"><span class="grow">群号</span><button class="text-btn" @click="copyText(activePerson.id, '已复制')">{{ activePerson.id }}</button></div>
+            <button class="row" @click="open('profile-qr', activePerson.id)"><span class="grow">群二维码</span><span>查看</span><app-icon name="ChevronRight"></app-icon></button>
+            <button v-if="isGroupOwner" class="row" @click="openGroupEdit"><span class="grow">编辑群组</span><app-icon name="ChevronRight"></app-icon></button>
+            <div class="contact-actions">
+              <button :aria-pressed="currentGroup.muted" @click="currentGroup.muted = !currentGroup.muted"><app-icon name="Bell"></app-icon>静音</button>
+              <button @click="open('chat-history', activePerson.id)"><app-icon name="Search"></app-icon>搜索</button>
+              <button @click="openGroupAnnouncements"><app-icon name="FileText"></app-icon>公告</button>
+            </div>
+            <button v-for="[mediaPage, category] in mediaEntries" :key="mediaPage" class="row" @click="open(mediaPage, activePerson.id)"><span class="grow">{{ category.name }} <span class="muted">{{ conversationMediaItems(mediaPage).length }}</span></span><app-icon name="ChevronRight"></app-icon></button>
+            <div class="group-members-heading">
+              <h2>成员 <small class="muted">{{ currentGroup.members.length }}</small></h2>
+              <div class="group-member-tools">
+                <button v-if="isGroupParticipant" class="icon-btn" aria-label="添加成员" @click="openGroupMemberPicker"><app-icon name="UserRoundPlus"></app-icon></button>
+                <button class="icon-btn" :aria-label="memberSearchVisible ? '关闭成员搜索' : '搜索成员'" :aria-expanded="memberSearchVisible" @click="toggleMemberSearch"><app-icon :name="memberSearchVisible ? 'X' : 'Search'"></app-icon></button>
+              </div>
+            </div>
+            <label v-if="memberSearchVisible" class="field group-search"><app-icon name="Search"></app-icon><input v-model.trim="memberSearch" aria-label="搜索成员昵称或用户名" placeholder="搜索成员昵称或用户名"></label>
+            <component :is="member.id === 'self' ? 'div' : 'button'" v-for="member in groupRoster" :key="member.id" class="row" @click="member.id !== 'self' && (isGroupOwner ? openGroupMemberActions(member) : open('contact', member.id))"><span class="avatar" :class="member.color">{{ member.avatar }}</span><span class="grow">{{ member.name }}</span><span class="muted">{{ member.role }}</span><app-icon v-if="member.id !== 'self'" name="ChevronRight"></app-icon></component>
+            <p v-if="!groupRoster.length" class="empty">无搜索结果</p>
+            <button v-if="currentGroup.owner !== 'self'" class="logout" @click="modal = 'leave-group'">退出群组</button>
+          </template>
+          <template v-else-if="page === 'group-edit' && currentGroup">
+            <form v-if="isGroupOwner" class="form-stack" @submit.prevent="saveGroupName"><label class="labeled">群名称<input v-model.trim="groupNameDraft" placeholder="输入群名" maxlength="64"></label><button class="primary" :disabled="!groupNameDraft.trim()">保存</button></form>
+          </template>
+          <template v-else-if="page === 'group-announcements' && currentGroup">
+            <article class="article" v-if="currentGroup.announcement"><p>{{ currentGroup.announcement }}</p></article>
+            <p v-else class="empty">暂无群公告</p>
+            <form v-if="currentGroup.owner === 'self'" class="form-stack" @submit.prevent="saveGroupAnnouncement">
+              <label class="labeled">{{ currentGroup.announcement ? '编辑公告' : '发布公告' }}<textarea v-model="announcementDraft" rows="4"></textarea></label>
+              <button class="primary" :disabled="!announcementDraft.trim()">{{ currentGroup.announcement ? '保存' : '发布公告' }}</button>
+            </form>
+          </template>
+
+          <template v-else-if="page === 'send-red'">
+            <form class="form-stack" @submit.prevent="sendRed">
+              <div class="row"><span class="grow">红包类型</span><strong>拼手气红包</strong></div>
+              <label class="labeled">红包金额<input v-model.trim="redDraft.amount" inputmode="decimal" placeholder="请输入有效金额"></label>
+              <label class="labeled">红包个数<input v-model.trim="redDraft.count" inputmode="numeric" placeholder="请输入红包个数"></label>
+              <label class="labeled">备注<input v-model.trim="redDraft.note" maxlength="40"></label>
+              <p v-if="redError" class="error" role="alert">{{ redError }}</p>
+              <button class="primary">塞钱进红包</button>
+            </form>
+          </template>
+          <template v-else-if="page === 'contact'">
+            <div class="glass-card group-profile"><span class="avatar" :class="activePerson.color">{{ activePerson.avatar }}</span><span class="row-info"><strong>{{ activePerson.name }}</strong><span>ID: {{ activePerson.id }}</span></span></div>
+            <label class="labeled contact-remark">备注名<input v-model.trim="contactRemarks[activePerson.id]" maxlength="30"></label>
+            <div class="row"><span class="grow">昵称</span><strong>{{ activePerson.name }}</strong></div>
+            <div class="row"><span>个性签名</span><span class="muted">这个人很懒，什么都没留下</span></div>
+            <div class="contact-actions contact-actions-four">
+              <button v-if="activePerson.letter || friendRequestsSent.has(activePerson.id)" @click="enterChat(activePerson.id)"><app-icon name="MessageCircle"></app-icon>消息</button>
+              <button v-else @click="addFriend(activePerson)"><app-icon name="UserRoundPlus"></app-icon>添加联系人</button>
+              <button @click="startCall('voice')"><app-icon name="Mic"></app-icon>通话</button>
+              <button @click="startCall('video')"><app-icon name="Video"></app-icon>视频</button>
+              <button :aria-pressed="!!contactMuted[activePerson.id]" @click="contactMuted[activePerson.id] = !contactMuted[activePerson.id]"><app-icon name="Bell"></app-icon>静音</button>
+            </div>
+            <button class="row" @click="modal = 'shared-groups'"><span class="grow">共同群组 {{ sharedGroups.length }}</span><app-icon name="ChevronRight"></app-icon></button>
+            <button v-for="[mediaPage, category] in mediaEntries" :key="mediaPage" class="row" @click="open(mediaPage, activePerson.id)"><span class="grow">{{ mediaPage === 'chat-links' ? '共享链接' : category.name }} <span class="muted">{{ conversationMediaItems(mediaPage).length }}</span></span><app-icon name="ChevronRight"></app-icon></button>
+          </template>
+          <template v-else-if="currentMedia">
+            <template v-for="message in conversationMediaItems(page)" :key="message.id">
+              <button v-if="page === 'chat-photos'" class="row media-row" @click="previewPicture(message)">
+                <img :src="message.url" alt=""><span class="grow">{{ message.text }}</span><app-icon name="ChevronRight"></app-icon>
+              </button>
+              <button v-else-if="page === 'chat-files'" class="row media-row" @click="openAttachment(message)">
+                <app-icon name="FileText"></app-icon><span class="grow">{{ message.text }}</span><app-icon name="ChevronRight"></app-icon>
+              </button>
+              <button v-else-if="page === 'chat-voice'" class="row media-row" :aria-pressed="playingVoiceId === message.id" @click="playVoice(message)">
+                <app-icon :name="playingVoiceId === message.id ? 'Mic' : 'Play'"></app-icon><span class="grow">{{ message.text }}</span><span>{{ message.duration }}</span>
+              </button>
+              <div v-else class="row media-row">{{ message.text }}</div>
+            </template>
+            <div v-if="!conversationMediaItems(page).length" class="media-empty">
+              <app-icon :name="currentMedia.icon"></app-icon><p>暂无{{ currentMedia.name }}</p>
+            </div>
+          </template>
+
+          <template v-else-if="page === 'groups' || page === 'requests' || page === 'add-friend'">
+            <template v-if="page === 'groups'">
+              <button v-for="person in people.filter(person => person.group)" :key="person.id" class="row" @click="enterChat(person.id)"><span class="tile"><app-icon name="UsersRound"></app-icon></span><span class="grow">{{ person.name }}</span><app-icon name="ChevronRight"></app-icon></button>
+            </template>
+            <template v-else-if="page === 'requests'">
+              <div v-for="person in requests" :key="person.id" class="row"><span class="avatar">{{ person.avatar }}</span><span class="grow">{{ person.name }}</span><button class="text-btn" @click="removeRequest(person)">拒绝</button><button class="small-button" @click="acceptFriend(person)">同意</button></div>
+              <p v-if="!requests.length" class="empty">暂无好友申请</p>
+            </template>
+            <template v-else>
+              <form class="user-search" @submit.prevent="searchUsers"><label class="field"><app-icon name="Search"></app-icon><input v-model.trim="newFriendSearch" aria-label="搜索用户" placeholder="请输入手机号/群名/…"></label><button class="small-button" :disabled="!newFriendSearch">搜索</button></form>
+              <div v-for="person in userSearchResults" :key="person.id" class="row"><span class="avatar">{{ person.avatar }}</span><span class="grow">{{ person.name }}</span><button class="small-button" @click="chatWithSearchResult(person)">聊天</button><button v-if="!person.group && !person.letter" class="small-button" :disabled="friendRequestsSent.has(person.id)" @click="addFriend(person)">{{ friendRequestsSent.has(person.id) ? '已发送' : '添加' }}</button></div>
+              <p v-if="newFriendQuery && !userSearchResults.length" class="empty">无搜索结果</p>
+              <div v-if="!newFriendQuery" class="empty"><strong>搜索用户开始聊天</strong><p>无需添加好友，直接发起私聊</p></div>
+            </template>
+          </template>
+
+          <template v-else-if="page === 'promo'">
+            <video class="video" src="./assets/promo-demo.webm" poster="./assets/city.webp" controls playsinline preload="metadata"></video>
+          </template>
+
+          <template v-else-if="page === 'news'">
+            <article class="article"><img :src="activeNews.image" alt=""><h2>{{ activeNews.title }}</h2><time>{{ activeNews.date }}</time><p>{{ activeNews.body }}</p></article>
+          </template>
+
+          <template v-else-if="page === 'check-records'">
+            <div class="point-filters">
+              <div class="shop-categories" role="group" aria-label="积分收支">
+                <button v-for="option in pointDirections" :key="option.id" :aria-pressed="pointDirection === option.id" @click="filterPointDirection(option.id)">{{ option.name }}</button>
+              </div>
+              <label class="point-type">积分类型
+                <select v-model="pointType"><option value="all">全部类型</option><option v-for="type in availablePointTypes" :key="type.id" :value="type.id">{{ type.name }}</option></select>
+              </label>
+            </div>
+            <component v-for="entry in shownPoints" :is="entry.order ? 'button' : 'div'" :key="entry.id" class="row" @click="entry.order && open('shop-order', entry.order)">
+              <span class="row-info"><strong>{{ entry.label }}</strong><span>{{ entry.date }}</span></span>
+              <strong class="balance">{{ entry.delta > 0 ? '+' : '−' }}{{ Math.abs(entry.delta) }} 积分</strong>
+              <app-icon v-if="entry.order" name="ChevronRight"></app-icon>
+            </component>
+            <p v-if="!shownPoints.length" class="empty">暂无积分记录</p>
+          </template>
+          <template v-else-if="page === 'check-rule'">
+            <check-rules></check-rules>
+            <button class="row" @click="open('check-records')"><span class="grow">积分明细</span><app-icon name="ChevronRight"></app-icon></button>
+          </template>
+
+          <template v-else-if="page === 'profile-edit'">
+            <form class="form-stack" @submit.prevent="saveProfile">
+              <button type="button" class="row" @click="modal = 'avatar-source'"><span class="grow">头像</span><span class="avatar"><img v-if="profile.avatar" :src="profile.avatar" alt=""><template v-else>{{ profile.nickname[0] }}</template></span><app-icon name="ChevronRight"></app-icon></button>
+              <input ref="avatarInput" type="file" accept="image/*" hidden @change="chooseAvatar">
+              <label class="labeled">名字<input v-model.trim="profileDraft.nickname" required maxlength="50"></label>
+              <div class="row"><span class="grow">用户名</span><strong>@{{ profile.username }}</strong><button type="button" class="text-btn" @click="copyText(profile.username,'已复制')">复制</button></div>
+              <label class="labeled">个人简介<textarea v-model="profileDraft.bio" rows="3" maxlength="100" placeholder="个人简介"></textarea><span class="muted">添加关于你自己的介绍。</span></label>
+              <label class="labeled">手机号<input :value="profile.phone" readonly></label>
+              <label class="labeled">性别<select v-model="profileDraft.gender"><option value="">未设置</option><option>男</option><option>女</option></select></label>
+              <label class="labeled">生日<input v-model="profileDraft.birthday" type="date"></label>
+              <div class="contact-actions"><button type="button" @click="modal = 'avatar-source'">设置新照片</button><button type="button" @click="open('profile-qr')">二维码</button><button type="button" @click="open('invite')">邀请朋友</button></div>
+              <button class="primary">完成</button>
+            </form>
+          </template>
+
+          <template v-else-if="page === 'points-shop'">
+            <div class="glass-card shop-summary">
+              <div><span>我的积分</span><strong>{{ amount }}</strong></div>
+              <div class="shop-links"><button @click="open('check-records')">积分明细</button></div>
+            </div>
+            <div class="shop-categories" role="group" aria-label="商品分类">
+              <button v-for="category in shopCategories" :key="category" :aria-pressed="shopCategory === category" @click="shopCategory = category">{{ category }}</button>
+            </div>
+            <div class="shop-grid">
+              <button v-for="item in shownShopItems" :key="item.id" class="shop-card" @click="open('shop-product', item.id)">
+                <img :src="shopPhoto(item)" alt="">
+                <span class="shop-card-copy">
+                  <strong>{{ item.name }}</strong>
+                  <span class="shop-card-meta"><span><b>{{ item.points }}</b> 积分</span><span class="shop-pick">{{ redemptions.some(entry => entry.id === item.id) ? '已兑换' : '兑换' }}</span></span>
+                </span>
+              </button>
+            </div>
+          </template>
+          <template v-else-if="page === 'shop-product'">
+            <p v-if="!shopProduct" class="empty">商品不存在</p>
+            <div v-else class="shop-detail">
+              <img :src="shopPhoto(shopProduct)" :alt="shopProduct.name">
+              <div class="shop-detail-copy">
+                <h2>{{ shopProduct.name }}</h2>
+                <p class="muted">{{ shopProduct.caption }}</p>
+                <p class="shop-price"><b>{{ shopProduct.points }}</b> 积分</p>
+              </div>
+              <button v-if="redemptions.some(entry => entry.id === shopProduct.id)" class="secondary" @click="open('shop-orders')">查看兑换记录</button>
+              <button v-else class="primary" :disabled="amount < shopProduct.points" @click="selectRedemption(shopProduct)">{{ amount < shopProduct.points ? '积分不足' : '立即兑换' }}</button>
+            </div>
+          </template>
+          <template v-else-if="page === 'shop-orders'">
+            <p v-if="!redemptions.length" class="empty">暂无兑换记录</p>
+            <button v-for="item in redemptions" :key="item.id" class="shop-order shop-order-link" @click="open('shop-order', item.id)">
+              <img :src="shopPhoto(item)" alt="">
+              <span class="shop-order-copy"><strong>{{ item.name }}</strong><span>{{ item.points }} 积分</span><span>{{ item.shipping.address }}</span></span>
+              <span class="shop-pick">待发货</span><app-icon name="ChevronRight"></app-icon>
+            </button>
+          </template>
+          <template v-else-if="page === 'shop-order'">
+            <p v-if="!shopOrder" class="empty">暂无兑换记录</p>
+            <div v-else class="form-stack">
+              <div class="shop-order">
+                <img :src="shopPhoto(shopOrder)" alt=""><div><strong>{{ shopOrder.name }}</strong><span>{{ shopOrder.points }} 积分</span><span>{{ shopOrder.date }}</span></div><span class="shop-pick">待发货</span>
+              </div>
+              <div class="shop-address"><strong>收货信息</strong><span>{{ shopOrder.shipping.name }} · {{ shopOrder.shipping.phone }}</span><span>{{ shopOrder.shipping.address }}</span></div>
+            </div>
+          </template>
+          <template v-else-if="page === 'lucky-draw'">
+            <section class="glass-card draw-panel">
+              <div class="draw-toolbar"><div class="draw-chances">剩余 <b>{{ drawBusy || drawResult !== null ? 0 : 1 }}</b> 次</div><button class="draw-record-link" @click="open('draw-records')">抽奖记录 <app-icon name="ChevronRight"></app-icon></button></div>
+              <div class="draw-wheel">
+                <div class="wheel-disc" :class="{ spinning: drawBusy }" :style="{ transform: 'rotate(' + drawAngle + 'deg)' }" aria-label="奖项">
+                  <span v-for="prize in drawPrizes" :key="prize.name" class="wheel-label">
+                    <template v-if="prize.points"><b>{{ prize.points }}</b><small>积分</small></template>
+                    <template v-else>{{ prize.name }}</template>
+                  </span>
+                </div>
+                <span class="wheel-pointer" aria-hidden="true"></span>
+                <button class="wheel-start" :disabled="drawBusy || drawResult !== null" @click="spinWheel">{{ drawBusy ? '抽奖中' : drawResult !== null ? '已抽奖' : '开始抽奖' }}</button>
+              </div>
+            </section>
+          </template>
+          <template v-else-if="page === 'draw-records'">
+            <p v-if="!drawResult" class="empty">暂无抽奖记录</p>
+            <div v-else class="row"><span class="row-info"><strong>{{ drawResult.prize.name }}</strong><span>{{ drawResult.date }}</span></span><span>消耗 {{ drawResult.cost }} 积分</span></div>
+          </template>
+          <template v-else-if="page === 'identity'">
+            <p v-if="identitySubmitted" class="empty" role="status">示例资料已提交</p>
+            <form v-else class="form-stack" @submit.prevent="submitIdentity">
+              <p class="muted">请使用示例资料体验提交。</p>
+              <label class="labeled">真实姓名<input v-model.trim="identityDraft.name" required></label>
+              <label class="labeled">身份证号码<input v-model.trim="identityDraft.number" required></label>
+              <div class="actions"><button type="button" class="secondary" @click="identityDraft.front = !identityDraft.front">{{ identityDraft.front ? '正面示例已选' : '选择身份证正面示例' }}</button><button type="button" class="secondary" @click="identityDraft.back = !identityDraft.back">{{ identityDraft.back ? '反面示例已选' : '选择身份证反面示例' }}</button></div>
+              <button class="primary" :disabled="!identityDraft.front || !identityDraft.back">提交</button>
+            </form>
+          </template>
+          <template v-else-if="page === 'wallet'">
+            <div class="glass-card wallet-card"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
+            <button class="row" @click="open('subsidy-wallet')"><app-icon name="Wallet"></app-icon><span class="row-info"><strong>全民补贴钱包</strong><span>签到发放</span></span><strong class="balance">¥ {{ money(subsidyBalance) }}</strong><app-icon name="ChevronRight"></app-icon></button>
+            <button class="row" @click="openWithdrawal"><app-icon name="Wallet"></app-icon><span class="grow">提现</span><app-icon name="ChevronRight"></app-icon></button>
+            <button class="row" @click="open('withdraw')"><app-icon name="CreditCard"></app-icon><span class="grow">提现方式</span><app-icon name="ChevronRight"></app-icon></button>
+            <button class="row" @click="open('red-records')"><app-icon name="FileText"></app-icon><span class="grow">红包记录</span><app-icon name="ChevronRight"></app-icon></button>
+          </template>
+          <template v-else-if="page === 'red-records'">
+            <p v-if="!walletRedRecords.length" class="empty">暂无红包记录</p>
+            <div v-for="record in walletRedRecords" :key="record.id" class="row">
+              <span class="grow">{{ record.label }}</span>
+              <strong class="balance">{{ record.cents < 0 ? '−' : '+' }}¥ {{ money(Math.abs(record.cents)) }}</strong>
+            </div>
+          </template>
+          <template v-else-if="page === 'subsidy-wallet'">
+            <div class="glass-card wallet-card"><span>累计补贴</span><strong>¥ {{ money(subsidyBalance) }}</strong><span>每日签到即可获得补贴。补贴为独立账户，暂不支持提现与转账。</span></div>
+            <h2 class="meeting-section">补贴明细</h2>
+            <div v-for="record in subsidyRecords" :key="record.date + record.kind" class="row"><span class="row-info"><strong>{{ record.kind === 'reward' ? '30 天签到奖励' : '签到发放' }}</strong><span>{{ record.date }}</span></span><strong class="balance">+¥ {{ money(subsidyAmount(record.kind)) }}</strong></div>
+            <p v-if="!subsidyRecords.length" class="empty">暂无补贴明细</p>
+          </template>
+          <template v-else-if="page === 'withdraw-request'">
+            <div class="glass-card wallet-card"><span>可提现余额</span><strong>¥ {{ walletBalance }}</strong></div>
+            <div v-if="withdrawReceipt" class="row"><span class="grow">审核中</span><strong class="balance">¥ {{ withdrawReceipt }}</strong></div>
+            <form v-else class="form-stack" @submit.prevent="submitWithdrawal">
+              <div class="withdraw-amount"><label class="labeled">提现金额<input v-model.trim="withdrawDraft.amount" inputmode="decimal"></label><button type="button" class="text-btn" @click="withdrawDraft.amount = walletBalance">全部提现</button></div>
+              <button type="button" class="row" @click="modal = 'withdraw-method'"><span class="grow">提现方式</span><span>{{ selectedPayout?.label || '请选择提现方式' }}</span><app-icon name="ChevronRight"></app-icon></button>
+              <label v-for="field in selectedPayout?.fields || []" :key="selectedPayout.id + '-' + field.key" class="labeled">{{ field.label }}<input v-model.trim="withdrawDraft.fields[field.key]" :inputmode="field.inputmode" required autocomplete="off"></label>
+              <p v-if="withdrawError" class="error" role="alert">{{ withdrawError }}</p>
+              <button class="primary">确认提现</button>
+            </form>
+          </template>
+          <template v-else-if="page === 'withdraw'">
+            <button v-for="method in payoutMethods" :key="method.id" class="row" @click="openWithdrawAccount(method)"><span class="tile"><app-icon name="CreditCard"></app-icon></span><span class="grow">{{ method.label }}</span><span v-if="boundAccounts[method.id]?.account" class="muted">••••{{ boundAccounts[method.id].account.slice(-4) }}</span><app-icon name="ChevronRight"></app-icon></button>
+          </template>
+          <template v-else-if="page === 'alipay' || page === 'withdraw-account'">
+            <form v-if="accountMethod" class="form-stack" @submit.prevent="saveWithdrawAccount"><label v-for="field in accountMethod.fields" :key="field.key" class="labeled">{{ field.bindingLabel || field.label }}<input v-model.trim="accountDraft[field.key]" :inputmode="field.inputmode" required autocomplete="off"></label><button class="primary">保存</button></form>
+            <p v-else class="empty">请选择提现方式</p>
+          </template>
+
+          <template v-else-if="page === 'invite'">
+            <div class="glass-card wallet-card invite-summary"><span>我的邀请码</span><strong>SX2026</strong><button class="secondary" @click="copyInvite">复制</button><div class="invite-totals"><span><b>0</b>我直接邀请</span><span><b>0</b>团队总人数</span></div><span>新用户必须使用推荐人邀请码注册</span></div>
+            <h2 class="meeting-section">我邀请的人</h2><div class="empty"><strong>还没有人用你的邀请码注册</strong><p>把上面的邀请码分享给朋友试试</p></div>
+          </template>
+          <template v-else-if="page === 'invited-people'"><p class="empty">还没有人用你的邀请码注册</p></template>
+
+          <template v-else-if="page === 'meeting'">
+            <div class="meeting-actions"><button class="primary" @click="openJoinMeeting">加入会议</button><button class="secondary" @click="openMeetingCreate">预约会议</button></div>
+            <button v-for="room in meetingRooms" :key="room.code" class="row" @click="open('meeting-detail', room.code)"><span class="tile"><app-icon name="Video"></app-icon></span><span class="row-info"><strong>{{ room.subject }}</strong><span>{{ meetingStartTime(room) }}</span></span><span class="muted">{{ meetingState(room) }}</span><app-icon name="ChevronRight"></app-icon></button>
+            <div v-if="!meetingRooms.length" class="empty"><strong>还没有会议</strong><p>你创建或参加过的会议会显示在这里</p></div>
+          </template>
+          <template v-else-if="page === 'meeting-create'">
+            <form class="form-stack" @submit.prevent="createMeeting">
+              <label class="labeled"><input v-model.trim="meetingDraft.subject" aria-label="会议主题" placeholder="会议主题" maxlength="64"></label>
+              <button type="button" class="row" @click="modal = 'meeting-start'"><span class="grow">开始时间</span><span>{{ meetingDraft.immediate ? '立即开始' : formatMeetingSlot(meetingDraft.start) }}</span><app-icon name="ChevronRight"></app-icon></button>
+              <button type="button" class="row" @click="modal = 'meeting-duration'"><span class="grow">会议时长</span><span>{{ meetingDraft.duration / 60 }} 小时</span><app-icon name="ChevronRight"></app-icon></button>
+              <p v-if="meetingCreateError" class="error" role="alert">{{ meetingCreateError }}</p>
+              <p v-else class="muted">会议到期后所有人会自动退出房间。</p>
+              <button class="primary">下一步</button>
+            </form>
+          </template>
+          <template v-else-if="page === 'meeting-detail'">
+            <template v-if="currentMeeting">
+              <div class="glass-card wallet-card"><span>{{ meetingState(currentMeeting) }}</span><h2>{{ currentMeeting.subject }}</h2></div>
+              <div class="row"><span class="grow">会议号</span><b>{{ currentMeeting.code }}</b><button class="text-btn" @click="copyText(currentMeeting.code, '已复制')">复制</button></div>
+              <div class="row"><span class="grow">开始时间</span><span>{{ meetingStartTime(currentMeeting) }}</span></div>
+              <div class="row"><span class="grow">会议时长</span><span>{{ currentMeeting.duration }} 分钟</span></div>
+              <p v-if="meetingError" class="error" role="alert">{{ meetingError }}</p>
+              <button v-if="meetingState(currentMeeting) === '进行中'" class="primary meeting-section" @click="joinMeeting(currentMeeting.code)">加入会议</button>
+            </template>
+            <p v-else class="empty">会议不存在</p>
+          </template>
+          <template v-else-if="page === 'meeting-room'">
+            <div v-if="currentMeeting" class="meeting-view"><span class="avatar">{{ profile.nickname[0] }}</span><b>{{ currentMeeting.subject }}</b><small>{{ currentMeeting.code }}</small>
+              <button class="secondary" @click="modal = 'leave-meeting'">退出会议</button>
+              <button v-if="currentMeeting.host && meetingState(currentMeeting) === '进行中'" class="logout" @click="modal = 'end-meeting'">结束会议</button>
+            </div>
+            <p v-else class="empty">会议不存在</p>
+          </template>
+
+          <template v-else-if="page === 'password-menu'">
+            <button class="row" @click="editPassword('password')"><app-icon name="LockKeyhole"></app-icon><span class="grow">修改密码</span><app-icon name="ChevronRight"></app-icon></button>
+            <button class="row" @click="editPassword('pay-password')"><app-icon name="KeyRound"></app-icon><span class="grow">{{ payConfigured ? '修改支付密码' : '设置支付密码' }}</span><app-icon name="ChevronRight"></app-icon></button>
+          </template>
+          <template v-else-if="page === 'password' || page === 'pay-password'">
+            <form class="form-stack" @submit.prevent="savePassword">
+              <label v-if="page === 'password' || payConfigured" class="labeled">验证原密码<input v-model="passwordDraft.old" type="password" :inputmode="page === 'pay-password' ? 'numeric' : 'text'" placeholder="请输入原密码" autocomplete="off"></label>
+              <label class="labeled">{{ page === 'pay-password' ? '支付密码' : '输入新密码' }}<input v-model="passwordDraft.first" type="password" :inputmode="page === 'pay-password' ? 'numeric' : 'text'" autocomplete="off"></label>
+              <label class="labeled">{{ page === 'pay-password' ? '确认支付密码' : '确认新密码' }}<input v-model="passwordDraft.confirm" type="password" :inputmode="page === 'pay-password' ? 'numeric' : 'text'" autocomplete="off"></label>
+              <p v-if="passwordError" class="error" role="alert">{{ passwordError }}</p><button class="primary">保存</button>
+            </form>
+          </template>
+
+          <template v-else-if="page === 'settings' || page === 'login-network'">
+            <template v-if="page === 'settings' && settingsSection === 'notifications'">
+              <h2 class="meeting-section">系统通知权限</h2>
+              <button class="row" @click="requestNotifications"><span class="grow">允许系统通知</span><span>{{ systemNotificationAllowed ? '已允许' : '由系统设置' }}</span><app-icon name="ChevronRight"></app-icon></button>
+              <template v-for="section in notificationGroups" :key="section.title">
+                <h2 class="meeting-section">{{ section.title }}</h2>
+                <template v-for="[key,label,hint] in section.options" :key="key">
+                  <button v-if="key === 'tone'" class="row" @click="modal = 'notification-tone'"><span class="grow">{{ label }}</span><span class="muted">{{ notificationTone }}</span><app-icon name="ChevronRight"></app-icon></button>
+                  <label v-else class="row"><span class="row-info"><strong>{{ label }}</strong><span v-if="hint">{{ hint }}</span></span><input v-model="notifications[key]" type="checkbox" role="switch" :aria-label="label"></label>
+                </template>
+              </template>
+              <button class="row" @click="modal = 'reset-notifications'"><span class="grow">重置所有通知设置</span><app-icon name="ChevronRight"></app-icon></button>
+            </template>
+            <template v-else-if="page === 'settings' && settingsSection === 'device'">
+              <div class="glass-card wallet-card"><span>当前设备 · 在线</span><h2>Android</h2><span>1.0.0 · Android 16 · 192.0.2.10</span></div>
+              <h2 class="meeting-section">链接新设备</h2>
+              <button class="row" @click="open('scan')"><app-icon name="Scan"></app-icon><span class="row-info"><strong>扫描二维码</strong><span>登录到其他设备</span></span><app-icon name="ChevronRight"></app-icon></button>
+              <p class="muted">在其他设备上打开应用，点击“扫描二维码”即可快速登录。</p>
+              <template v-if="otherDevices.length"><h2 class="meeting-section">其他设备</h2>
+                <div v-for="device in otherDevices" :key="device.id" class="row"><span class="grow">{{ device.name }}</span><time class="muted">{{ device.date }}</time><button class="text-btn" @click="selectDeviceToEnd(device)">终止设备会话</button></div>
+                <button class="row" @click="modal = 'end-other-devices'">终止所有其他设备</button>
+              </template>
+              <h2 class="meeting-section">账号</h2><button class="row" @click="modal = 'logout'"><span class="grow">退出登录</span><app-icon name="ChevronRight"></app-icon></button>
+              <p class="muted">退出后需要重新登录才能使用</p>
+            </template>
+            <template v-else>
+              <div class="glass-card wallet-card">
+                <span>当前线路 · {{ networkPending.has(selectedNetwork) ? '测速中' : selectedLatency === null ? '未连接' : selectedLatency < 500 ? '良好' : '较慢' }}</span>
+                <strong>{{ selectedLatency ?? '—' }} <small>ms</small></strong>
+                <span>{{ networkAvailableCount }} / {{ networkLines.length }} 条线路可用</span>
+                <div class="actions"><button class="secondary" :disabled="!!networkPending.size" @click="testNetwork()">重新测速</button><button class="secondary" :disabled="!!networkPending.size" @click="testNetwork('discover')">重新发现</button></div>
+              </div>
+              <div v-for="line in networkLines" :key="line.id" class="row">
+                <span class="grow">线路 {{ line.id }}</span>
+                <span>{{ networkPending.has(line.id) ? '测速中' : !online || line.latency === null ? '未连接' : line.latency + 'ms' }}</span>
+                <button class="icon-btn" :aria-label="'重新测速线路 ' + line.id" :disabled="!!networkPending.size" @click="testNetwork('retest', line.id)"><app-icon name="RotateCw"></app-icon></button>
+                <input v-model="selectedNetwork" type="radio" :value="line.id" :aria-label="'选择线路 ' + line.id" :disabled="!online || line.latency === null || networkPending.has(line.id)">
+              </div>
+            </template>
+          </template>
+          <template v-else-if="page === 'scan'">
+            <div class="form-stack"><input ref="scanImage" type="file" accept="image/*" capture="environment" hidden @change="decodeScan"><button class="primary" @click="scanImage.click()">扫描二维码</button><p v-if="scanResult" class="article" role="status">{{ scanResult }}</p></div>
+          </template>
+          <template v-else-if="page === 'stickers'">
+            <div class="section-tabs" role="group" aria-label="贴纸分类"><button v-for="tab in ['已安装','发现更多']" :key="tab" :aria-pressed="stickerTab === tab" @click="stickerTab = tab">{{ tab }}</button></div>
+            <template v-if="stickerTab === '发现更多'">
+              <p class="empty">已安装全部贴纸包</p>
+              <h2 class="meeting-section">创建</h2><button class="row" @click="openStickerStore"><span class="row-info"><strong>新建贴纸包</strong><span>使用照片创建专属贴纸</span></span><app-icon name="ChevronRight"></app-icon></button>
+            </template>
+            <template v-else><h2 class="meeting-section">最近使用</h2><div class="sticker-recent">{{ emojis.join(' ') }}</div><h2 class="meeting-section">已安装 (5)</h2>
+              <div v-for="pack in stickerPacks" :key="pack.name" class="row"><span class="sticker-glyph">{{ pack.glyph }}</span><span class="row-info"><strong>{{ pack.name }}</strong><span>{{ pack.count }} 个贴纸</span></span><span class="shop-pick">内置</span></div>
+              <h2 class="meeting-section">设置</h2><label v-for="(enabled, label) in stickerSettings" :key="label" class="row"><span class="grow">{{ label }}</span><input v-model="stickerSettings[label]" role="switch" type="checkbox"></label>
+            </template>
+          </template>
+          <template v-else-if="page === 'sticker-store'">
+            <div class="section-tabs" role="group" aria-label="表情商店"><button v-for="tab in ['商店','我的表情','制作表情']" :key="tab" :aria-pressed="stickerStoreTab === tab" @click="stickerStoreTab = tab">{{ tab }}</button></div>
+            <template v-if="stickerStoreTab === '制作表情'">
+              <div class="sticker-tools">
+                <button class="small-button" @click="stickerFile.click()">从相册制作</button>
+                <button class="small-button" @click="toggleStickerArrangement">{{ arrangingStickers ? '完成' : '整理' }}</button>
+                <button v-if="arrangingStickers" class="small-button" :disabled="!selectedStickers.size" @click="removeSelectedStickers">删除选中</button>
+              </div>
+              <input ref="stickerFile" type="file" accept="image/*" hidden @change="addCustomSticker">
+              <p v-if="!customStickers.length" class="empty">暂无自定义表情</p>
+              <label v-for="sticker in customStickers" :key="sticker.url" class="row"><img class="sticker-preview" :src="sticker.url" alt=""><span class="grow">{{ sticker.name }}</span><input v-if="arrangingStickers" type="checkbox" :checked="selectedStickers.has(sticker.url)" @change="toggleStickerSelection(sticker.url)"></label>
+            </template>
+            <template v-else>
+              <label v-if="stickerStoreTab === '商店'" class="field"><app-icon name="Search"></app-icon><input v-model.trim="stickerStoreSearch" aria-label="搜索表情包" placeholder="搜索表情包"></label>
+              <p v-else-if="!addedStickerPacks.size" class="empty">还没有添加表情包，请到商店添加</p>
+              <div v-for="pack in stickerPacks.filter(pack => stickerStoreTab === '商店' ? pack.name.includes(stickerStoreSearch) : addedStickerPacks.has(pack.name))" :key="pack.name" class="row">
+                <span class="sticker-glyph">{{ pack.glyph }}</span><span class="row-info"><strong>{{ pack.name }}</strong><span>{{ pack.count }} 个表情</span></span>
+                <button v-if="stickerStoreTab === '商店'" class="small-button" :disabled="addedStickerPacks.has(pack.name)" @click="addedStickerPacks.add(pack.name)">{{ addedStickerPacks.has(pack.name) ? '已添加' : '添加' }}</button>
+              </div>
+            </template>
+          </template>
+          <template v-else-if="page === 'discover'"><button class="row" @click="open('square')"><span class="row-info"><strong>广场</strong><span>看看大家的新动态</span></span><app-icon name="ChevronRight"></app-icon></button></template>
+          <template v-else-if="page === 'square' || page === 'square-search'">
+            <label v-if="page === 'square-search'" class="field"><app-icon name="Search"></app-icon><input v-model.trim="squareQuery" aria-label="搜索动态" placeholder="搜索动态"></label>
+            <div v-for="post in squareEntries.filter(entry => page === 'square' || (squareQuery && entry.text.includes(squareQuery)))" :key="post.id" class="square-entry">
+              <div class="row slim"><span class="avatar">{{ profile.nickname[0] }}</span><span class="row-info"><strong>{{ profile.nickname }}</strong><span>{{ post.audience }}</span></span><small class="shop-pick">审核中</small></div>
+              <p v-if="post.text">{{ post.text }}</p>
+              <video v-if="post.attachment?.video" :src="post.attachment.url" controls playsinline></video>
+              <img v-else-if="post.attachment" :src="post.attachment.url" alt="动态图片">
+            </div>
+            <p v-if="page === 'square-search' && squareQuery && !squareEntries.some(post => post.text.includes(squareQuery))" class="empty">无搜索结果</p>
+          </template>
+          <template v-else-if="page === 'square-notices'"><p class="empty">暂无动态通知</p></template>
+          <template v-else-if="page === 'square-post'">
+            <div class="row"><span class="avatar">{{ profile.nickname[0] }}</span><span class="row-info"><strong>{{ profile.nickname }}</strong><button class="small-button square-audience" @click="modal = 'square-audience'">{{ squareDraft.audience }} ▾</button></span></div>
+            <p class="muted">当前发布后需要审核</p>
+            <label class="labeled square-text"><textarea v-model="squareDraft.text" rows="5" aria-label="分享你的想法" placeholder="分享你的想法..." maxlength="2000"></textarea></label>
+            <div v-if="squareDraft.attachment" class="square-entry">
+              <video v-if="squareDraft.attachment.video" :src="squareDraft.attachment.url" controls playsinline></video>
+              <img v-else :src="squareDraft.attachment.url" alt="动态图片">
+            </div>
+            <div class="composer-panel square-actions">
+              <button class="panel-option" @click="modal = 'square-emoji'"><app-icon name="Smile"></app-icon>表情</button>
+              <button class="panel-option" @click="pickSquareFile('image')"><app-icon name="Image"></app-icon>相册</button>
+              <button class="panel-option" @click="pickSquareFile('camera')"><app-icon name="Camera"></app-icon>拍照</button>
+              <button class="panel-option" @click="pickSquareFile('video')"><app-icon name="Video"></app-icon>视频</button>
+              <button class="panel-option" @click="squareTopic = ''; modal = 'square-topic'"><b>#</b>话题</button>
+              <button class="panel-option" @click="modal = 'square-mention'"><b>@</b>@</button>
+            </div>
+            <input ref="squareUpload" type="file" hidden @change="attachSquareFile">
+          </template>
+          <template v-else-if="page === 'profile-qr'"><div class="glass-card wallet-card qr-card"><strong>{{ profileQrGroup ? activePerson.name : profile.nickname }}</strong><span v-if="!profileQrGroup">@{{ profile.username }}</span><img v-if="!profileQrGroup || ['product','project','design'].includes(profileQrGroup)" :src="'./assets/qr-' + (profileQrGroup || 'profile') + '.png'" alt="二维码"><span v-else>{{ profileQrGroup }}</span></div></template>
+          <template v-else-if="page === 'saved-messages'"><div v-for="entry in favorites" :key="entry.id" class="row"><span class="grow">{{ entry.text }}</span></div><p v-if="!favorites.length" class="empty">暂无收藏</p></template>
+
+          <template v-else-if="page === 'user-agreement' || page === 'privacy-policy'">
+            <article class="auth-document">
+              <section v-for="(section,index) in authDocuments[page]" :key="index">
+                <component v-if="section.heading" :is="section.subheading ? 'h3' : 'h2'">{{ section.heading }}</component>
+                <p v-if="section.text">{{ section.text }}</p>
+                <component v-if="section.items" :is="section.subheading ? 'ul' : 'ol'"><li v-for="item in section.items" :key="item">{{ item }}</li></component>
+              </section>
+            </article>
+          </template>
+          <template v-else-if="page === 'account-recovery'">
+            <section class="auth-recovery">
+              <span class="tile"><app-icon name="Headset"></app-icon></span><h2>找回账号密码</h2>
+              <p>如需找回账号或重置密码，请联系在线客服协助处理</p>
+              <button class="primary" @click="open('recovery-support')">联系在线客服</button>
+              <button class="text-btn" @click="back('login')">返回登录</button>
+            </section>
+          </template>
+          <template v-else-if="page === 'support' || page === 'recovery-support'">
+            <div class="identity"><span class="support-avatar" aria-hidden="true"><app-icon name="Headset"></app-icon></span><strong>联系客服</strong></div>
+            <button class="primary" @click="enterChat('support')">聊天</button>
+          </template>
+          <template v-else-if="page === 'chat-tools'">
+            <button class="row" @click="open('chat-history',activePerson.id)"><app-icon name="Search"></app-icon><span class="grow">聊天记录</span><app-icon name="ChevronRight"></app-icon></button>
+          </template>
+          <template v-else-if="page === 'chat-history'">
+            <label class="field"><app-icon name="Search"></app-icon><input v-model="historySearch" aria-label="搜索消息" placeholder="搜索消息"></label>
+            <div v-for="message in historyResults" :key="message.id" class="row"><span class="grow">{{ message.text }}</span></div>
+            <p v-if="!historyResults.length" class="empty">无搜索结果</p>
+          </template>
+        </div>
+
+        <div v-if="page === 'messages' && chatSelecting" class="actions batch-actions">
+          <button class="secondary" :disabled="!selectedChats.size" @click="applyChatBatch(false)">标记已读</button>
+          <button class="secondary" :disabled="!selectedChats.size" @click="modal = 'batch-remove'">删除</button>
+        </div>
+        <div v-if="page === 'chat' && selectingMessages" class="message-selection-bar" role="group" aria-label="消息选择操作">
+          <button type="button" @click="exitMessageSelection">取消</button>
+          <button type="button" @click="selectAllMessages">{{ allMessagesSelected ? '取消全选' : '全选' }}</button>
+          <span role="status">已选择 {{ selectedMessageIds.size }} 条消息</span>
+          <button type="button" :disabled="!selectedMessageIds.size" @click="openMessageForward">转发</button>
+          <button type="button" :disabled="!selectedMessageIds.size" @click="modal = 'delete-message'">删除</button>
+        </div>
+        <div v-else-if="page === 'chat'" class="composer">
+          <div v-if="replyContext || editingMessage" class="composer-context" :class="{ 'composer-editing': editingMessage }">
+            <span class="message-quote"><strong>{{ editingMessage ? '编辑消息' : replyContext.author }}</strong><span>{{ editingMessage ? editingMessage.text : replyContext.text }}</span></span>
+            <button type="button" class="glass-icon" :aria-label="editingMessage ? '取消编辑' : '取消回复'" @click="clearMessageComposer"><app-icon name="X"></app-icon></button>
+          </div>
+          <div v-if="chatPanel === 'files'" class="composer-panel">
+            <button class="panel-option" @click="pickFile('image')"><app-icon name="Image"></app-icon>相册</button>
+            <button class="panel-option" @click="pickFile('camera')"><app-icon name="Camera"></app-icon>相机</button>
+            <button class="panel-option" @click="pickFile('file')"><app-icon name="FileText"></app-icon>文件</button>
+            <button class="panel-option" @click="open('saved-messages')"><app-icon name="Pin"></app-icon>收藏</button>
+            <button v-if="activePerson.group" class="panel-option" @click="openRedComposer"><span class="packet-icon" aria-hidden="true">🧧</span>群红包</button>
+            <template v-else-if="activePerson.id !== 'support'">
+              <button class="panel-option" @click="startCall('voice')"><app-icon name="Mic"></app-icon>语音通话</button>
+              <button class="panel-option" @click="startCall('video')"><app-icon name="Video"></app-icon>视频通话</button>
+            </template>
+          </div>
+          <div v-if="chatPanel === 'emoji'" class="composer-panel emoji-panel"><button v-for="emoji in emojis" :key="emoji" @click="draft += emoji">{{ emoji }}</button></div>
+          <div v-if="pendingPictures.length" class="pending-pictures">
+            <div class="picture-strip"><div v-for="(picture, index) in pendingPictures" :key="picture.id" class="pending-tile">
+              <button type="button" :aria-label="'预览 ' + (index+1)" @click="previewPicture(picture)"><img :src="picture.url" alt="图片"></button>
+              <button type="button" class="remove-picture" :aria-label="'移除 ' + (index+1)" :disabled="picturesBusy" @click="removePendingPicture(picture)"><app-icon name="X"></app-icon></button>
+            </div></div>
+            <div class="picture-actions"><label><input type="checkbox" v-model="sendOriginal" :disabled="picturesBusy">原图</label><button type="button" class="send" :disabled="picturesBusy" @click="sendPendingPictures">发送（{{ pendingPictures.length }}）</button></div>
+          </div>
+          <div v-if="voiceMode" class="compose-line recording-line">
+            <button class="glass-icon" aria-label="取消录音" @click="stopVoiceCapture(false)"><app-icon name="ChevronLeft"></app-icon></button>
+            <span class="recording-gesture" @pointerdown="startVoiceGesture" @pointerup="releaseVoiceCapture" @pointercancel="stopVoiceCapture(false)">← 滑动取消 <b>{{ voiceElapsed }}</b></span>
+            <button class="send" @click="stopVoiceCapture(true)">发送</button>
+          </div>
+          <form v-else class="compose-line" @submit.prevent="sendMessage">
+            <button type="button" class="glass-icon" aria-label="更多" @click="toggleChatPanel('files')"><app-icon name="Plus"></app-icon></button>
+            <input ref="composerInput" v-model="draft" aria-label="Aa" placeholder="Aa" @focus="chatPanel = ''">
+            <button type="button" class="glass-icon" aria-label="表情" @click="toggleChatPanel('emoji')"><app-icon name="Smile"></app-icon></button>
+            <button v-if="!draft.trim()" type="button" class="glass-icon" aria-label="语音" @click="toggleVoiceMode"><app-icon name="Mic"></app-icon></button>
+            <button v-else class="send" type="submit">发送</button>
+          </form>
+          <input ref="fileInput" type="file" hidden @change="attachFile">
+        </div>
+
+        <nav v-if="isTab" class="tabbar" aria-label="主导航">
+          <button v-for="tab in tabs" :key="tab.page" :aria-current="page === tab.page ? 'page' : undefined" @click="switchTab(tab.page)"><span class="tab-icon"><app-icon :name="tab.icon"></app-icon></span><span>{{ tab.label }}</span></button>
+        </nav>
+      </template>
+
+      <div class="system-home" :class="{ light: isTab || page === 'chat' }" aria-hidden="true"><span></span></div>
+
+      <div v-if="modal" class="overlay" @click.self="modal = ''">
+        <div class="dialog" role="dialog" aria-modal="true" :aria-label="dialogTitle">
+          <h2 v-if="modal !== 'conversation-menu'">{{ dialogTitle }}</h2>
+          <template v-if="modal === 'chat-add'">
+            <button class="row" @click="open('add-friend')"><span class="grow">搜索用户</span><app-icon name="Search"></app-icon></button>
+            <button class="row" @click="openGroupCreation"><span class="grow">新建群组</span><app-icon name="UsersRound"></app-icon></button>
+            <button class="row" @click="open('scan')"><span class="grow">扫描二维码</span><app-icon name="Scan"></app-icon></button>
+          </template>
+          <template v-else-if="modal === 'chat-actions'">
+            <button class="row" @click="open('chat-history', activePerson.id)">搜索</button>
+            <button class="row" @click="open('saved-messages')">收藏</button>
+            <button v-if="!isGroupOwner" class="row" @click="modal = 'leave-group'">退出群组</button>
+          </template>
+          <template v-else-if="modal === 'shared-groups'"><button v-for="shared in sharedGroups" :key="shared.id" class="row" @click="open('group-info', shared.id)">{{ shared.name }}</button><p v-if="!sharedGroups.length" class="empty">暂无共同群组</p></template>
+          <template v-else-if="modal === 'conversation-menu'">
+            <button class="row" @click="conversationTarget.unread = conversationTarget.unread ? 0 : 1; modal = ''"><span class="grow">{{ conversationTarget.unread ? '标记为已读' : '标记为未读' }}</span><app-icon name="MessageCircle"></app-icon></button>
+            <button class="row" @click="conversationTarget.pinned = !conversationTarget.pinned; modal = ''"><span class="grow">{{ conversationTarget.pinned ? '取消置顶' : '置顶' }}</span><app-icon name="Pin"></app-icon></button>
+            <button class="row" @click="toggleConversationMute"><span class="grow">{{ conversationMuted(conversationTarget) ? '取消静音' : '静音' }}</span><app-icon name="Bell"></app-icon></button>
+            <button class="row" @click="modal = 'remove-conversation'"><span class="grow">删除</span></button>
+          </template>
+          <template v-else-if="modal === 'batch-remove' || modal === 'remove-conversation'"><p>聊天将从列表中移除，但不会删除聊天记录</p><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="modal === 'batch-remove' ? applyChatBatch(true) : removeConversation()">删除</button></div></template>
+          <template v-else-if="modal === 'square-audience'">
+            <button v-for="[label, description] in squareAudiences" :key="label" class="row" @click="pickSquareAudience(label)"><span class="row-info"><strong>{{ label }}</strong><span>{{ description }}</span></span><app-icon v-if="squareDraft.audience === label" name="Check"></app-icon></button>
+          </template>
+          <template v-else-if="modal === 'square-audience-people'">
+            <label v-for="person in squareContacts" :key="person.id" class="row"><span class="grow">{{ person.name }}</span><input type="checkbox" :checked="squareAudience.has(person.id)" @change="selectSquarePerson(person.id)"></label>
+            <button class="primary" :disabled="!squareAudience.size" @click="confirmSquareAudience">确定</button>
+          </template>
+          <template v-else-if="modal === 'square-emoji'"><div class="emoji-panel"><button v-for="emoji in emojis" :key="emoji" @click="squareDraft.text += emoji; modal = ''">{{ emoji }}</button></div></template>
+          <template v-else-if="modal === 'square-topic'"><form class="form-stack" @submit.prevent="squareDraft.text += '#' + squareTopic + ' '; modal = ''"><label class="labeled">话题<input v-model.trim="squareTopic" required></label><button class="primary">确定</button></form></template>
+          <template v-else-if="modal === 'square-mention'"><button v-for="person in squareContacts" :key="person.id" class="row" @click="squareDraft.text += '@' + person.name + ' '; modal = ''">{{ person.name }}</button></template>
+          <template v-else-if="modal === 'notification-tone'">
+            <p class="muted">点击播放预览</p>
+            <div v-for="(asset, tone) in notificationTones" :key="tone" class="row">
+              <button v-if="asset" class="icon-btn" :aria-label="'预览' + tone" @click="playTone(tone)"><app-icon name="Play"></app-icon></button>
+              <button class="grow tone-choice" :aria-pressed="notificationTone === tone" @click="notificationTone = tone; modal = ''">{{ tone }} <app-icon v-if="notificationTone === tone" name="Check"></app-icon></button>
+            </div>
+          </template>
+          <template v-else-if="modal === 'change-password'">
+            <div class="section-tabs" role="group" aria-label="密码类型"><button :aria-pressed="passwordMode === 'password'" @click="openPasswordModal('password')">登录密码</button><button :aria-pressed="passwordMode === 'pay-password'" @click="openPasswordModal('pay-password')">支付密码</button></div>
+            <form class="form-stack compact" @submit.prevent="savePassword">
+              <label v-for="[field, label] in [['old','请输入原密码'],['first', passwordMode === 'password' ? '请输入新密码（6–20位）' : '请输入6位支付密码'],['confirm','请再次输入新密码']]" v-show="field !== 'old' || passwordMode === 'password' || payConfigured" :key="field" class="field">
+                <input v-model="passwordDraft[field]" :type="visiblePasswords.has(field) ? 'text' : 'password'" :placeholder="label" :aria-label="label" autocomplete="off">
+                <button class="icon-btn" type="button" :aria-label="(visiblePasswords.has(field) ? '隐藏' : '显示') + label" @click="togglePasswordField(field)"><app-icon :name="visiblePasswords.has(field) ? 'Eye' : 'EyeOff'"></app-icon></button>
+              </label>
+              <p v-if="passwordMode === 'password'" class="muted">修改成功后需要用新密码重新登录</p>
+              <p v-if="passwordError" class="error" role="alert">{{ passwordError }}</p>
+              <div class="actions"><button type="button" class="secondary" @click="modal = ''">取消</button><button class="primary">确认修改</button></div>
+            </form>
+          </template>
+          <template v-else-if="modal === 'subsidy-rules'">
+            <p>每位用户每日仅限签到 1 次。签到可获得 500 元全民补贴。</p>
+            <p>用户连续签到满 30 天，可额外获取一次「30 天签到奖励」，3000 元全民补贴。中断一天则重新累计。</p>
+            <p>30 天签到奖励领取后，重新开始计算下一周期。漏签不扣除已获得的奖励，但漏签将重新累计签到天数。</p>
+            <button class="primary" @click="modal = ''">知道了</button>
+          </template>
+          <template v-else-if="modal === 'logout'"><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="logout">确定</button></div></template>
+          <template v-else-if="modal === 'leave-meeting'"><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="leaveMeeting">确定</button></div></template>
+          <template v-else-if="modal === 'join-meeting'"><form class="form-stack" @submit.prevent="joinMeeting()"><label class="labeled"><input v-model.trim="meetingCode" inputmode="numeric" aria-label="9 位会议号" placeholder="9 位会议号" maxlength="9"></label><p v-if="meetingError" class="error" role="alert">{{ meetingError }}</p><div class="actions"><button type="button" class="secondary" @click="modal = ''">取消</button><button class="primary">加入</button></div></form></template>
+          <template v-else-if="modal === 'meeting-duration'"><button v-for="minutes in meetingDurations" :key="minutes" class="row" @click="meetingDraft.duration = minutes; modal = ''"><span class="grow">{{ minutes / 60 }} 小时</span><app-icon v-if="meetingDraft.duration === minutes" name="Check"></app-icon></button></template>
+          <template v-else-if="modal === 'meeting-start'"><button class="row" @click="meetingDraft.immediate = true; modal = ''"><span class="grow">立即开始</span><app-icon v-if="meetingDraft.immediate" name="Check"></app-icon></button><button v-for="slot in nextMeetingSlots" :key="slot" class="row" @click="meetingDraft.immediate = false; meetingDraft.start = slot; modal = ''"><span class="grow">{{ formatMeetingSlot(slot) }}</span><app-icon v-if="!meetingDraft.immediate && meetingDraft.start === slot" name="Check"></app-icon></button></template>
+          <template v-else-if="modal === 'end-meeting'"><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="endMeeting">确定</button></div></template>
+          <template v-else-if="modal === 'reset-notifications'"><p>确定要将所有通知设置恢复为默认值吗？</p><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="resetNotifications">重置</button></div></template>
+          <template v-else-if="modal === 'end-other-devices'"><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="endOtherDevices">确定</button></div></template>
+          <template v-else-if="modal === 'end-device'"><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="endDevice">确定</button></div></template>
+          <template v-else-if="modal === 'check-rule'"><check-rules></check-rules><button class="primary" @click="modal = ''">确定</button></template>
+          <template v-else-if="modal === 'picture-preview'"><img class="full-preview" :src="picturePreview.url" alt="图片"><button class="primary" @click="modal = ''">确定</button></template>
+          <template v-else-if="modal === 'create-group'">
+            <form class="form-stack" @submit.prevent="createGroup">
+              <button type="button" class="avatar squared new-group-avatar" aria-label="设置群头像" @click="groupAvatarInput.click()"><img v-if="groupDraft.avatar" :src="groupDraft.avatar" alt=""><app-icon v-else name="Camera"></app-icon></button>
+              <input ref="groupAvatarInput" type="file" accept="image/*" hidden @change="selectGroupAvatar">
+              <label class="labeled"><input v-model.trim="groupDraft.name" aria-label="输入群名" placeholder="输入群名" maxlength="64"></label>
+              <div class="section-tabs" role="group" aria-label="群组可见性"><button v-for="option in ['公开','私密']" :key="option" type="button" :aria-pressed="groupDraft.visibility === option" @click="groupDraft.visibility = option">{{ option }}</button></div>
+              <label class="field"><app-icon name="Search"></app-icon><input v-model.trim="groupDraft.search" aria-label="搜索联系人" placeholder="搜索联系人"></label>
+              <div v-if="!filteredGroupCandidates.length" class="empty"><strong>暂无可邀请的好友</strong><p>请先添加好友后再来这里创建群聊</p><button type="button" class="text-btn" @click="groupDraft.search = ''">刷新联系人</button></div>
+              <fieldset v-else class="group-selection"><legend>选择成员</legend><label v-for="person in filteredGroupCandidates" :key="person.id" class="row slim"><input type="checkbox" v-model="groupDraft.memberIds" :value="person.id"><span>{{ person.name }}</span></label></fieldset>
+              <div class="actions"><button type="button" class="secondary" @click="modal = ''">取消</button><button class="primary" :disabled="!groupDraft.name || !groupDraft.memberIds.length">{{ !groupDraft.name ? '请填写群名' : groupDraft.memberIds.length ? '创建' : '至少选择一位联系人' }}</button></div>
+            </form>
+          </template>
+          <template v-else-if="modal === 'leave-group'"><p>退出后将不再接收此群组的消息</p><button class="logout" @click="leaveGroup">退出群组</button><button class="secondary" @click="modal = ''">取消</button></template>
+          <template v-else-if="modal === 'add-group-members'">
+            <label class="field"><app-icon name="Search"></app-icon><input v-model.trim="memberDraft.search" aria-label="搜索联系人" placeholder="搜索联系人"></label>
+            <div class="group-selection"><label v-for="person in matchingGroupContacts" :key="person.id" class="row slim"><input type="checkbox" v-model="memberDraft.ids" :value="person.id"><span>{{ person.name }}</span></label></div>
+            <p v-if="!availableGroupContacts.length" class="empty">没有可添加的联系人</p><p v-else-if="!matchingGroupContacts.length" class="empty">无搜索结果</p>
+            <div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" :disabled="!memberDraft.ids.length" @click="addGroupMembers">添加</button></div>
+          </template>
+          <template v-else-if="modal === 'group-member-actions'"><button class="row" @click="open('contact', managedMember.id)">个人信息</button><button class="row" @click="changeGroupMemberRole">{{ managedIsAdmin ? '取消管理员' : '设为管理员' }}</button><button class="row" @click="modal = 'remove-group-member'">移除成员</button><button class="secondary" @click="modal = ''">取消</button></template>
+          <template v-else-if="modal === 'remove-group-member'"><p>{{ managedMember?.name }}</p><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="removeGroupMember">移除</button></div></template>
+          <template v-else-if="modal === 'open-red'">
+            <div class="red-hero"><span class="large-red" aria-hidden="true">🧧</span><strong>{{ selectedRed.sender }}的红包</strong><p>{{ selectedRed.note || '拼手气红包' }}</p><button class="red-open" aria-label="拆开红包" @click="claimRed">开</button></div>
+            <button v-if="selectedRed.mine" class="text-btn" @click="modal = 'receive-red'">查看领取记录</button>
+            <button class="text-btn" @click="modal = ''">关闭</button>
+          </template>
+          <template v-else-if="modal === 'receive-red'">
+            <div class="red-hero"><span class="large-red" aria-hidden="true">🧧</span><strong>{{ selectedRed.sender }}的红包</strong><p>{{ selectedRed.note || '拼手气红包' }}</p><span>{{ selectedRed.claimed ? '已领取' : canClaimRed(selectedRed) ? '红包金额' : '红包已被领完' }}</span><b v-if="selectedRed.mine || selectedRed.claimed" class="red-amount">¥ {{ money(selectedRed.claimed ? selectedRed.receivedCents : selectedRed.cents) }}</b><small v-if="selectedRed.claimed">已计入我的钱包</small></div>
+            <div><h3 class="red-list-title">领取记录</h3><p class="muted">已领 {{ selectedRed.claims.length }}/{{ selectedRed.count }} 个，共 ¥ {{ money(redReceivedTotal) }}/{{ money(selectedRed.cents) }}</p><div v-for="(entry, index) in selectedRed.claims" :key="index" class="row slim"><span class="avatar">{{ entry.name[0] }}</span><span class="grow">{{ entry.name }}</span><b>¥ {{ money(entry.cents) }}</b></div><p v-if="!selectedRed.claims.length" class="empty">暂无领取记录</p></div>
+            <button v-if="canClaimRed(selectedRed)" class="primary" @click="modal = 'open-red'">领取红包</button>
+            <button class="secondary" @click="modal = ''">关闭</button>
+          </template>
+          <template v-else-if="modal === 'redeem-points'">
+            <div class="shop-order"><img :src="shopPhoto(redeemItem)" alt=""><div><strong>{{ redeemItem.name }}</strong><span>{{ redeemItem.points }} 积分</span></div></div>
+            <form class="form-stack compact" @submit.prevent="redeemPoints">
+              <label class="labeled">收货人<input v-model.trim="shippingDraft.name" maxlength="30" required autocomplete="off"></label>
+              <label class="labeled">手机号<input v-model.trim="shippingDraft.phone" type="tel" maxlength="11" required autocomplete="off"></label>
+              <label class="labeled">详细地址<textarea v-model.trim="shippingDraft.address" rows="2" maxlength="160" required autocomplete="off"></textarea></label>
+              <p v-if="shippingError" class="error" role="alert">{{ shippingError }}</p>
+              <div class="actions"><button type="button" class="secondary" @click="modal = ''">取消</button><button class="primary">确认兑换</button></div>
+            </form>
+          </template>
+          <template v-else-if="modal === 'draw-result'">
+            <div class="draw-result"><span v-if="!drawResult.prize.noPrize">恭喜获得</span><strong>{{ drawResult.prize.name }}</strong></div>
+            <button class="primary" @click="modal = ''">确定</button>
+          </template>
+          <template v-else-if="modal === 'attachment'"><p class="muted">{{ activeAttachment.size }}</p><a v-if="activeAttachment.url" class="primary download" :href="activeAttachment.url" :download="activeAttachment.text">文件</a><button class="secondary" @click="modal = ''">确定</button></template>
+          <template v-else-if="modal === 'message-menu'">
+            <div class="quick-reactions" role="group" aria-label="快捷表情回应">
+              <button v-for="[glyph, label] in quickReactions" :key="glyph" :aria-label="label" :aria-pressed="!!currentMessage.reactions?.some(reaction => reaction.glyph === glyph)" @click="chooseReaction(glyph, label)">{{ glyph }}</button>
+              <button :aria-label="reactionPickerOpen ? '收起更多表情' : '更多表情'" :aria-expanded="reactionPickerOpen" @click="reactionPickerOpen = !reactionPickerOpen; reactionSearch = ''"><app-icon :name="reactionPickerOpen ? 'X' : 'Plus'"></app-icon></button>
+            </div>
+            <div v-if="reactionPickerOpen" class="reaction-picker">
+              <label class="field"><app-icon name="Search"></app-icon><input v-model="reactionSearch" aria-label="搜索表情" placeholder="搜索"></label>
+              <div v-if="recentReactions.length && !reactionSearch.trim()" class="reaction-grid" role="group" aria-label="最近使用"><button v-for="[glyph, label] in recentReactions" :key="glyph" :aria-label="label" @click="chooseReaction(glyph, label)">{{ glyph }}</button></div>
+              <div v-if="visibleReactions.length" class="reaction-grid" role="group" aria-label="更多表情"><button v-for="[glyph, label] in visibleReactions" :key="glyph" :aria-label="label" :aria-pressed="!!currentMessage.reactions?.some(reaction => reaction.glyph === glyph)" @click="chooseReaction(glyph, label)">{{ glyph }}</button></div>
+              <p v-else class="empty">无搜索结果</p>
+            </div>
+            <template v-else>
+            <button class="row" @click="prepareMessageComposer(false)">回复</button>
+            <button class="row" @click="copyMessage">复制</button>
+            <button class="row" @click="openMessageForward">转发</button>
+            <button class="row" @click="if (!favorites.some(entry => entry.id === currentMessage.id)) favorites.push(currentMessage); modal = ''; ">收藏</button>
+            <button v-if="currentMessage.mine && currentMessage.delivery !== 'failed'" class="row" @click="prepareMessageComposer(true)">编辑</button>
+            <button v-if="currentMessage.mine" class="row" @click="recallMessage">撤回</button>
+            <button class="row" @click="startMessageSelection">选择</button>
+            <button class="secondary" @click="modal = ''">取消</button>
+            </template>
+          </template>
+          <template v-else-if="modal === 'delete-message'"><p>这些消息将从您的聊天记录中删除，且无法恢复</p><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="deleteMessage">删除</button></div></template>
+          <template v-else-if="modal === 'edit-nickname'"><form class="form-stack" @submit.prevent="saveNickname"><label class="labeled"><input ref="nicknameInput" v-model="nicknameDraft" aria-label="昵称" maxlength="50" autocomplete="off" aria-describedby="nickname-count"><span id="nickname-count" class="muted nickname-count">{{ nicknameDraft.length }}/50</span></label><div class="actions"><button type="button" class="secondary" @click="modal = ''">取消</button><button class="primary" :disabled="!nicknameDraft.trim()">保存</button></div></form></template>
+          <template v-else-if="modal === 'avatar-source'"><button class="row" @click="pickAvatar('camera')">拍照</button><button class="row" @click="pickAvatar('gallery')">从相册选择</button><button class="secondary" @click="modal = ''">取消</button></template>
+          <template v-else-if="modal === 'avatar-crop'"><img class="crop-preview" :src="avatarPreview" alt=""><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="saveAvatar">确定</button></div></template>
+          <template v-else-if="modal === 'withdraw-method'"><button v-for="method in payoutMethods" :key="method.id" class="row" @click="chooseWithdrawMethod(method)">{{ method.label }}</button><button class="secondary" @click="modal = ''">取消</button></template>
+          <template v-else-if="modal === 'withdraw-success'"><div class="row"><span class="grow">提现至</span><b>{{ selectedPayout?.label }}</b></div><div class="row"><span class="grow">提现金额</span><b>¥ {{ withdrawReceipt }}</b></div><button class="primary" @click="modal = ''">确定</button></template>
+        </div>
+      </div>
+      <div v-if="notice" class="toast" role="status">{{ notice }}</div>
+    </main>
+  </div>
+</body>
+</html>

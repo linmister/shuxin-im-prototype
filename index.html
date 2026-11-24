@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>数信 IM · 演示原型</title>
+    <script>
+      const prototypePage = new URL('./prototype/', window.location.href);
+      prototypePage.search = window.location.search;
+      prototypePage.hash = window.location.hash;
+      window.location.replace(prototypePage.href);
+    </script>
+  </head>
+  <body>
+    <a href="./prototype/">打开数信 IM 演示原型</a>
+  </body>
+</html>
