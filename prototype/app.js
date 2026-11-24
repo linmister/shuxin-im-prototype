@@ -54,7 +54,7 @@ const stickerPacks = [
   { name: '动态爱心', glyph: '❤️', count: 18 },
 ];
 const profileLinks = [
-  ['meeting', 'Video'], ['wallet', 'Wallet', '我的钱包'], ['native-check', 'CalendarCheck2'], ['invite', 'Ticket'],
+  ['meeting', 'Video'], ['wallet', 'Wallet', '我的钱包'], ['invite', 'Ticket'],
   ['withdraw', 'CreditCard'], ['identity', 'Shield'],
   ['password-menu', 'KeyRound'], ['settings', 'Settings'], ['stickers', 'Smile'],
 ].map(([page, icon, label]) => ({ page, icon, title: label ?? titles[page] }));
