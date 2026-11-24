@@ -441,7 +441,6 @@
           </template>
           <template v-else-if="page === 'wallet'">
             <div class="glass-card wallet-card"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
-            <button class="row" @click="open('subsidy-wallet')"><app-icon name="Wallet"></app-icon><span class="row-info"><strong>全民补贴钱包</strong><span>签到发放</span></span><strong class="balance">¥ {{ money(subsidyBalance) }}</strong><app-icon name="ChevronRight"></app-icon></button>
             <button class="row" @click="openWithdrawal"><app-icon name="Wallet"></app-icon><span class="grow">提现</span><app-icon name="ChevronRight"></app-icon></button>
             <button class="row" @click="open('withdraw')"><app-icon name="CreditCard"></app-icon><span class="grow">提现方式</span><app-icon name="ChevronRight"></app-icon></button>
             <button class="row" @click="open('red-records')"><app-icon name="FileText"></app-icon><span class="grow">红包记录</span><app-icon name="ChevronRight"></app-icon></button>
