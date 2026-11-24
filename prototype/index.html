@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./app.css">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js"></script>
-  <script defer src="./app.js?v=0.1.7"></script>
+  <script defer src="./app.js?v=0.1.8"></script>
 </head>
 <body>
   <div class="workspace">
@@ -473,7 +473,7 @@
             <button v-for="method in payoutMethods" :key="method.id" class="row" @click="openWithdrawAccount(method)"><span class="tile"><app-icon name="CreditCard"></app-icon></span><span class="grow">{{ method.label }}</span><span v-if="boundAccounts[method.id]?.account" class="muted">••••{{ boundAccounts[method.id].account.slice(-4) }}</span><app-icon name="ChevronRight"></app-icon></button>
           </template>
           <template v-else-if="page === 'alipay' || page === 'withdraw-account'">
-            <form v-if="accountMethod" class="form-stack" @submit.prevent="saveWithdrawAccount"><label v-for="field in accountMethod.fields" :key="field.key" class="labeled">{{ field.bindingLabel || field.label }}<input v-model.trim="accountDraft[field.key]" :inputmode="field.inputmode" required autocomplete="off"></label><button class="primary">保存</button></form>
+            <form v-if="accountMethod" class="form-stack" @submit.prevent="saveWithdrawAccount"><label v-for="field in accountMethod.fields" :key="field.key" class="labeled">{{ field.label }}<input v-model.trim="accountDraft[field.key]" :inputmode="field.inputmode" required autocomplete="off"></label><button class="primary">保存</button></form>
             <p v-else class="empty">请选择提现方式</p>
           </template>
 

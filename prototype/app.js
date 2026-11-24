@@ -175,15 +175,17 @@ createApp({
   setup() {
     const route = ref(readRoute());
     const scenario = new URLSearchParams(location.search);
+    const beneficiaryField = { key: 'beneficiary', label: '姓名' };
+    const phonePayoutFields = [beneficiaryField, { key: 'account', label: '手机号', inputmode: 'tel' }];
     const payoutMethods = [
-      { id: 'alipay', label: '支付宝', fields: [{ key: 'account', label: '收款账号', bindingLabel: '账号' }] },
+      { id: 'alipay', label: '支付宝', fields: phonePayoutFields },
+      { id: 'bank', label: '银行卡', fields: [
+        beneficiaryField,
+        { key: 'bank', label: '银行' },
+        { key: 'account', label: '卡号', inputmode: 'numeric' },
+      ] },
+      { id: 'fenxiang', label: '纷享生活', fields: phonePayoutFields },
     ];
-    payoutMethods.push({ id: 'bank', label: '银行卡', fields: [
-        { key: 'beneficiary', label: '收款人' },
-        { key: 'account', label: '收款账号', inputmode: 'numeric' },
-        { key: 'bank', label: '开户银行' },
-    ] });
-    payoutMethods.push({ id: 'fenxiang', label: '纷享生活', fields: [{ key: 'account', label: '收款账号' }] });
     const inviteRequired = scenario.get('invite') !== 'optional';
     const inviteLabel = inviteRequired ? '邀请码（必填）' : '邀请码（选填）';
     const demoInviteCode = 'SX2026';
