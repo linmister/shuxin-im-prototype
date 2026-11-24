@@ -245,10 +245,13 @@ button.row:hover, .panel-option:hover { background-color: #eaf2fe; }
 .check-button.signed { background: #e2f1ff; color: var(--blue); border-color: #bfdcff; box-shadow: none; }
 .check-month { display: flex; justify-content: space-between; margin-top: 10px; padding: 8px 3px 0; border-top: 1px solid var(--rule); color: var(--muted); font-size: 12px; }
 .check-month b { color: var(--blue); }
-.personal { display: flex; align-items: center; gap: 13px; padding: 12px; text-align: left; margin: 4px 0 6px; min-height: 70px; }
 .profile-card { display: flex; align-items: center; padding-right: 12px; }
-.profile-card .personal { flex: 1; min-width: 0; margin: 0; }
-.profile-card > button + .glass-icon { margin-left: 5px; flex: 0 0 auto; }
+.personal { position: relative; display: flex; align-items: center; flex: 1; gap: 13px; min-width: 0; min-height: 70px; padding: 8px 12px; text-align: left; }
+.profile-details-button { position: absolute; inset: 0; z-index: 1; border-radius: 12px; }
+.profile-details-button:focus-visible { outline-offset: -3px; }
+.profile-nickname { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.profile-nickname-edit { position: relative; z-index: 2; width: 28px; height: 28px; border-radius: 8px; }
+.profile-nickname-edit svg { width: 15px; height: 15px; }
 .nickname-count { justify-self: end; font-variant-numeric: tabular-nums; }
 .invite-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px 0 6px; }
 .invite-totals span { display: grid; gap: 4px; }

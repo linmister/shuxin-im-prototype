@@ -147,7 +147,17 @@
           </template>
 
           <template v-else-if="page === 'profile'">
-            <div class="glass-card profile-card"><button class="personal" @click="editProfile"><span class="avatar"><img v-if="profile.avatar" :src="profile.avatar" alt=""><template v-else>{{ profile.nickname[0] }}</template></span><span class="row-info"><strong>{{ profile.nickname }}</strong><span>{{ profile.bio || '个性签名' }}</span></span></button><button class="glass-icon" aria-label="修改昵称" @click="openNicknameEditor"><app-icon name="Pencil"></app-icon></button><button class="glass-icon" aria-label="二维码" @click="open('profile-qr')"><app-icon name="Scan"></app-icon></button></div>
+            <div class="glass-card profile-card">
+              <div class="personal">
+                <button class="profile-details-button" aria-label="编辑资料" @click="editProfile"></button>
+                <span class="avatar"><img v-if="profile.avatar" :src="profile.avatar" alt=""><template v-else>{{ profile.nickname[0] }}</template></span>
+                <div class="row-info">
+                  <div class="profile-nickname"><strong>{{ profile.nickname }}</strong><button class="glass-icon profile-nickname-edit" aria-label="修改昵称" @click="openNicknameEditor"><app-icon name="Pencil"></app-icon></button></div>
+                  <span>{{ profile.bio || '个性签名' }}</span>
+                </div>
+              </div>
+              <button class="glass-icon" aria-label="二维码" @click="open('profile-qr')"><app-icon name="Scan"></app-icon></button>
+            </div>
             <div class="profile-shortcuts">
               <button @click="open('points-shop')"><span class="tile"><app-icon name="Coins"></app-icon></span>积分商城</button>
               <button @click="open('lucky-draw')"><span class="tile"><app-icon name="Ticket"></app-icon></span>幸运抽奖</button>
