@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./app.css?v=0.1.20">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js?v=0.1.17"></script>
-  <script defer src="./app.js?v=0.1.21"></script>
+  <script defer src="./app.js?v=0.1.22"></script>
 </head>
 <body>
   <div class="workspace">
@@ -905,7 +905,12 @@
           <template v-else-if="modal === 'edit-nickname'"><form class="form-stack" @submit.prevent="saveNickname"><label class="labeled"><input ref="nicknameInput" v-model="nicknameDraft" aria-label="昵称" maxlength="50" autocomplete="off" aria-describedby="nickname-count"><span id="nickname-count" class="muted nickname-count">{{ nicknameDraft.length }}/50</span></label><div class="actions"><button type="button" class="secondary" @click="modal = ''">取消</button><button class="primary" :disabled="!nicknameDraft.trim()">保存</button></div></form></template>
           <template v-else-if="modal === 'avatar-source'"><button class="row" @click="pickAvatar('camera')">拍照</button><button class="row" @click="pickAvatar('gallery')">从相册选择</button><button class="secondary" @click="modal = ''">取消</button></template>
           <template v-else-if="modal === 'avatar-crop'"><img class="crop-preview" :src="avatarPreview" alt=""><div class="actions"><button class="secondary" @click="modal = ''">取消</button><button class="primary" @click="saveAvatar">确定</button></div></template>
-          <template v-else-if="modal === 'withdraw-method'"><button v-for="method in payoutMethods" :key="method.id" class="row" @click="chooseWithdrawMethod(method)">{{ method.label }}</button><button class="secondary" @click="modal = ''">取消</button></template>
+          <template v-else-if="modal === 'withdraw-method'">
+            <button v-for="method in payoutMethods" :key="method.id" class="row" @click="chooseWithdrawMethod(method)">
+              <span class="grow">{{ method.label }}</span><span class="muted">{{ payoutAccountLabel(method) }}</span><app-icon name="ChevronRight"></app-icon>
+            </button>
+            <button class="secondary" @click="modal = ''">取消</button>
+          </template>
           <template v-else-if="modal === 'withdraw-account-required'"><p>尚未保存{{ pendingPayout.label }}的收款资料，请先补充提现信息。</p><div class="actions"><button class="secondary" @click="pendingPayout = null; modal = ''">取消</button><button class="primary" @click="openWithdrawAccount(pendingPayout)">去补充</button></div></template>
           <template v-else-if="modal === 'withdraw-success'"><div class="row"><span class="grow">提现至</span><b>{{ selectedPayout?.label }}</b></div><div class="row"><span class="grow">提现金额</span><b>¥ {{ withdrawReceipt }}</b></div><button class="primary" @click="modal = ''">确定</button></template>
         </div>

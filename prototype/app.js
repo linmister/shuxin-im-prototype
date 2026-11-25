@@ -1741,6 +1741,11 @@ createApp({
     function hasPayoutAccount(method) {
       return method.fields.every(field => Boolean(boundAccounts[method.id]?.[field.key]));
     }
+    function payoutAccountLabel(method) {
+      if (!hasPayoutAccount(method)) return '未绑定';
+      const account = boundAccounts[method.id].account;
+      return account.length > 4 ? '••••' + account.slice(-4) : '••••';
+    }
     function chooseWithdrawMethod(method) {
       withdrawError.value = '';
       if (!hasPayoutAccount(method)) {
@@ -1947,7 +1952,7 @@ createApp({
       selectingMessages, selectedMessageIds, allMessagesSelected, startMessageSelection, exitMessageSelection, toggleMessageSelection, selectAllMessages, openMessageForward,
       composerInput, replyContext, editingMessage, clearMessageComposer, prepareMessageComposer,
       copyMessage, forwardMessage, recallMessage, deleteMessage, avatarInput, avatarPreview, pickAvatar, chooseAvatar, saveAvatar,
-      walletBalance, withdrawDraft, withdrawError, withdrawReceipt, pendingPayout, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
+      walletBalance, withdrawDraft, withdrawError, withdrawReceipt, pendingPayout, payoutAccountLabel, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
       payoutMethods, boundAccounts, accountDraft, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
       inviteLabel, retryMessage,
       redDraft, redError, canSendRed, redCaption, redDetailStatus, openRedComposer, meetingError, openJoinMeeting, joinMeeting, leaveMeeting, endMeeting,
