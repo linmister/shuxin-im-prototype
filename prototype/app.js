@@ -56,7 +56,7 @@ const stickerPacks = [
 ];
 const profileLinks = [
   ['meeting', 'Video'], ['wallet', 'Wallet', '钱包余额'],
-  ['withdraw', 'CreditCard'], ['identity', 'Shield'], ['invite', 'Ticket'],
+  ['withdraw', 'CreditCard'], ['identity', 'ShieldCheck'], ['invite', 'Ticket'],
   ['password-menu', 'KeyRound'], ['settings', 'Settings', '通知·网络·设备'], ['stickers', 'Smile'],
 ].map(([page, icon, label]) => ({ page, icon, title: label ?? titles[page] }));
 
@@ -221,7 +221,7 @@ createApp({
     const memberToManage = ref(null);
     const groupNameDraft = ref('');
     let groupSequence = 0;
-    const requests = ref([{ id: 'luo', name: '罗欣', avatar: '罗', letter: 'L', color: 'lilac', time: '' }]);
+    const requests = reactive([{ person: { id: 'luo', name: '罗欣', avatar: '罗', letter: 'L', color: 'lilac', time: '' }, status: 'pending' }]);
     const threads = reactive({
       product: [
         item('09:32', false, 'time'), item('新版页面已经同步。', false, 'text', { sender: '林晓', time: '09:32' }),
@@ -1398,15 +1398,17 @@ createApp({
       friendRequestsSent.add(person.id);
       setNotice(`已将 ${person.name} 添加到联系人`);
     }
-    function removeRequest(person) {
-      requests.value = requests.value.filter(request => request.id !== person.id);
+    function rejectFriend(request) {
+      if (request.status === 'pending') request.status = 'rejected';
     }
-    function acceptFriend(person) {
+    function acceptFriend(request) {
+      if (request.status !== 'pending') return;
+      const { person } = request;
       const contact = people.find(candidate => candidate.id === person.id);
       if (contact) contact.letter = person.letter;
       else people.push({ ...person });
       friendRequestsSent.delete(person.id);
-      removeRequest(person);
+      request.status = 'accepted';
       setNotice('已通过好友申请');
     }
 
@@ -1957,7 +1959,7 @@ createApp({
       subsidyAmount, subsidyBalance, checkInForSubsidy, claimSubsidyReward,
       identitySides, identityDraft, identityError, identitySubmitted, chooseIdentityImage, removeIdentityImage, identityImageLoaded, submitIdentity,
       refreshCaptcha, lastMessage, enterChat, sendMessage, toggleChatPanel, pickFile, attachFile, openAttachment,
-      sendRed, selectEnvelope, canClaimRed, claimRed, addFriend, removeRequest, acceptFriend, viewMonth, checkIn, editProfile,
+      sendRed, selectEnvelope, canClaimRed, claimRed, addFriend, rejectFriend, acceptFriend, viewMonth, checkIn, editProfile,
       saveProfile, copyInvite, copyText, editPassword, savePassword,
       nicknameDraft, nicknameInput, openNicknameEditor, saveNickname,
     };

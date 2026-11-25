@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#061333">
   <title>数信 IM · 演示原型</title>
   <link rel="icon" href="./assets/app-icon.png" type="image/png">
-  <link rel="stylesheet" href="./app.css?v=0.1.14">
+  <link rel="stylesheet" href="./app.css?v=0.1.15">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js"></script>
-  <script defer src="./app.js?v=0.1.14"></script>
+  <script defer src="./app.js?v=0.1.15"></script>
 </head>
 <body>
   <div class="workspace">
@@ -309,7 +309,15 @@
               <button v-for="person in people.filter(person => person.group)" :key="person.id" class="row" @click="enterChat(person.id)"><span class="tile"><app-icon name="UsersRound"></app-icon></span><span class="grow">{{ person.name }}</span><app-icon name="ChevronRight"></app-icon></button>
             </template>
             <template v-else-if="page === 'requests'">
-              <div v-for="person in requests" :key="person.id" class="row"><span class="avatar">{{ person.avatar }}</span><span class="grow">{{ person.name }}</span><button class="text-btn" @click="removeRequest(person)">拒绝</button><button class="small-button" @click="acceptFriend(person)">同意</button></div>
+              <div v-for="request in requests" :key="request.person.id" class="row">
+                <span class="avatar">{{ request.person.avatar }}</span>
+                <span class="grow">{{ request.person.name }}</span>
+                <template v-if="request.status === 'pending'">
+                  <button class="text-btn" @click="rejectFriend(request)">拒绝</button>
+                  <button class="small-button" @click="acceptFriend(request)">同意</button>
+                </template>
+                <span v-else class="friend-request-status" :class="{ accepted: request.status === 'accepted' }" role="status">{{ request.status === 'accepted' ? '已同意' : '已拒绝' }}</span>
+              </div>
               <p v-if="!requests.length" class="empty">暂无好友申请</p>
             </template>
             <template v-else>

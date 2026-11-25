@@ -175,6 +175,8 @@ button.row:hover, .panel-option:hover { background-color: #eaf2fe; }
 .conversation.pinned { border-radius: 13px; background: #edf3ff; border-bottom-color: transparent; padding-inline: 7px; }
 .conversation strong svg { color: #4f73a4; width: 13px; height: 13px; }
 .badge { display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--blue); color: white; font-size: 10px; }
+.friend-request-status { padding: 6px 10px; border-radius: 8px; background: #edf1f7; color: #4b5d76; font-size: 12px; white-space: nowrap; }
+.friend-request-status.accepted { background: #e3efff; color: #155bb5; }
 .avatar {
   display: inline-grid; place-items: center; flex: 0 0 auto; color: #254f8a;
   width: 41px; height: 41px; border-radius: 50%; background: #dceafe; font-size: 15px; font-weight: 750;
