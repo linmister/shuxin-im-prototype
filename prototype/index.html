@@ -505,7 +505,12 @@
                   <button type="button" class="text-btn" @click="withdrawDraft.amount = walletBalance">全部提现</button>
                 </div>
               </div>
-              <button type="button" class="row" @click="modal = 'withdraw-method'"><span class="grow">提现方式</span><span>{{ selectedPayout?.label || '请选择提现方式' }}</span><app-icon name="ChevronRight"></app-icon></button>
+              <button type="button" class="row" @click="modal = 'withdraw-method'">
+                <span class="grow">提现方式</span>
+                <span v-if="selectedPayout">{{ selectedPayout.label }} <span class="muted">{{ payoutAccountLabel(selectedPayout) }}</span></span>
+                <span v-else>请选择提现方式</span>
+                <app-icon name="ChevronRight"></app-icon>
+              </button>
               <p v-if="withdrawError" class="error" role="alert">{{ withdrawError }}</p>
               <button class="primary">确认提现</button>
             </form>
