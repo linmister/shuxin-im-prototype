@@ -210,14 +210,17 @@ button.row:hover, .panel-option:hover { background-color: #eaf2fe; }
 .promo {
   width: 100%; height: 195px; margin: 5px 0 19px; padding: 16px; position: relative;
   display: flex; align-items: end; justify-content: space-between; color: white; border-radius: 16px;
-  border: 1px solid #5499fa; background: linear-gradient(0deg, #030f35a4, #0314420f 65%), url("./assets/city.webp") 67% center / cover;
+  border: 1px solid #5499fa; background: linear-gradient(0deg, #030f35e6, #0314420f 76%), url("./assets/city.webp") 67% center / cover;
 }
-.promo strong { font-size: 23px; padding-bottom: 3px; }
-.promo span { border: 1px solid #8cdaff; background: #06357ba6; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; }
+.promo-copy { display: grid; gap: 4px; text-align: left; }
+.promo-copy strong { font-size: 23px; }
+.promo-copy small { font-size: 12px; color: #d7ecff; }
+.promo-play { border: 1px solid #8cdaff; background: #06357ba6; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; flex: 0 0 auto; }
 .intro { padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
 .intro p, .article p { font-size: 13px; line-height: 1.75; color: var(--muted); margin-top: 9px; }
 .news h2 { margin: 15px 0 3px; }
 .news .row { min-height: 67px; }
+.news .row-info strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; line-height: 1.4; }
 .news img { width: 77px; height: 49px; object-fit: cover; border-radius: 8px; }
 .article { padding-top: 12px; }
 .article img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; display: block; margin-bottom: 14px; }

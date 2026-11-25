@@ -74,12 +74,15 @@ const seedPeople = [
 const support = { id: 'support', name: '联系客服', avatar: '客', time: '09:41' };
 const addCandidate = { id: 'wang', name: '王婷', avatar: '王', color: 'lilac', time: '' };
 const news = [
-  { id: 'example', title: '数据要素应用案例', image: './assets/news-1.webp', date: '2026-11-20',
-    body: '本案例展示数据资源从收集、整理到开放使用的过程。示例中的业务单位、数据范围和时间均为演示内容。' },
-  { id: 'exchange', title: '公共数据利用专题交流', image: './assets/news-2.webp', date: '2026-11-18',
-    body: '专题交流围绕数据目录梳理、业务需求汇总和成果展示展开。本条资料用于演示资讯列表与详情之间的跳转。' },
-  { id: 'infrastructure', title: '数据基础设施应用观察', image: './assets/news-3.webp', date: '2026-11-16',
-    body: '从数据资源接入、质量管理和使用反馈三个方面，介绍数据基础设施在日常业务中的典型应用场景。' },
+  { id: 'example', title: '国家数据局与国家数据集团举行工作会谈', image: './assets/news-2.webp', date: '2026-11-20', source: '国家数据局',
+    url: 'https://www.nda.gov.cn/sjj/jgsz/jld/llh/llhldhd/1120/20261120222113664893159_mobile.html',
+    body: '11月18日，国家数据局与国家数据集团在北京会谈。会谈明确，集团将围绕数据资源开发利用、数据科技创新和数据基础设施建设布局，双方将建立常态化工作对接机制。' },
+  { id: 'exchange', title: '国家数据局部署第二批可信数据空间试点', image: './assets/news-3.webp', date: '2026-11-18', source: '国家数据局',
+    url: 'https://www.nda.gov.cn/sjj/zwgk/tzgg/1118/20261118203149832876736_pc.html',
+    body: '国家数据局综合司发布试点通知，面向企业、行业和城市三个层面开展工作。试点聚焦数据安全流通、供需协作和应用落地，并探索可信数据空间与人工智能结合的场景。' },
+  { id: 'infrastructure', title: '国家数据集团在河北雄安新区成立', image: './assets/news-1.webp', date: '2026-10-20', source: '新华社 · 国家数据局转载',
+    url: 'https://www.nda.gov.cn/sjj/swdt/mtsy/1020/20261020191823470535612_mobile.html',
+    body: '10月20日，国家数据集团有限公司在河北雄安新区成立，总部也设在雄安新区。集团以数据资源开发利用为主责主业，将通过央地联动和产业合作，促进数据资源利用并服务人工智能和数据产业发展。' },
 ];
 const week = ['日', '一', '二', '三', '四', '五', '六'];
 const demoToday = '2026-11-24';

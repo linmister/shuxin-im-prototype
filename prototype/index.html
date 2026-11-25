@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#061333">
   <title>数信 IM · 演示原型</title>
   <link rel="icon" href="./assets/app-icon.png" type="image/png">
-  <link rel="stylesheet" href="./app.css?v=0.1.19">
+  <link rel="stylesheet" href="./app.css?v=0.1.20">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js?v=0.1.17"></script>
-  <script defer src="./app.js?v=0.1.18"></script>
+  <script defer src="./app.js?v=0.1.20"></script>
 </head>
 <body>
   <div class="workspace">
@@ -112,10 +112,13 @@
           </template>
 
           <template v-else-if="page === 'group'">
-            <button class="promo" @click="open('promo')"><strong>宣传片</strong><span><app-icon name="Play"></app-icon></span></button>
-            <section class="intro"><h2>国家数据集团介绍</h2><p>聚焦数据资源开发利用，推动数据要素流通与产业协同，服务数字经济发展。</p></section>
+            <button class="promo" @click="open('promo')">
+              <span class="promo-copy"><strong>激活数据新动能</strong><small>宣传片 · 演示视频</small></span>
+              <span class="promo-play"><app-icon name="Play"></app-icon></span>
+            </button>
+            <section class="intro"><h2>国家数据集团介绍</h2><p>国家数据集团有限公司于 2026 年 10 月在河北雄安新区成立，以数据资源开发利用为主责主业。集团推动数据有序汇聚、安全流通和高效应用，服务人工智能发展与产业协同。</p></section>
             <section class="news"><h2>新闻资料</h2>
-              <button v-for="item in news" :key="item.id" class="row" @click="open('news',item.id)"><img :src="item.image" alt=""><span class="row-info"><strong>{{ item.title }}</strong><span>{{ item.date }}</span></span><app-icon name="ChevronRight"></app-icon></button>
+              <button v-for="item in news" :key="item.id" class="row" @click="open('news',item.id)"><img :src="item.image" alt=""><span class="row-info"><strong>{{ item.title }}</strong><span>{{ item.date }} · {{ item.source }}</span></span><app-icon name="ChevronRight"></app-icon></button>
             </section>
           </template>
 
@@ -333,7 +336,7 @@
           </template>
 
           <template v-else-if="page === 'news'">
-            <article class="article"><img :src="activeNews.image" alt=""><h2>{{ activeNews.title }}</h2><time>{{ activeNews.date }}</time><p>{{ activeNews.body }}</p></article>
+            <article class="article"><img :src="activeNews.image" alt="主题示意图"><h2>{{ activeNews.title }}</h2><time :datetime="activeNews.date">{{ activeNews.date }}</time><p>{{ activeNews.body }}</p><p><a class="text-btn" :href="activeNews.url" target="_blank" rel="noopener noreferrer">查看{{ activeNews.source }}原文</a></p></article>
           </template>
 
           <template v-else-if="page === 'check-records'">
