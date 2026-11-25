@@ -182,7 +182,7 @@ createApp({
     const beneficiaryField = { key: 'beneficiary', label: '姓名' };
     const phonePayoutFields = [beneficiaryField, { key: 'phone', label: '手机号', inputmode: 'tel' }];
     const payoutMethods = [
-      { id: 'alipay', label: '支付宝', savesAmount: true, fields: [
+      { id: 'alipay', label: '支付宝', fields: [
         ...phonePayoutFields, { key: 'account', label: '支付宝账号' },
       ] },
       { id: 'bank', label: '银行卡', fields: [
@@ -190,7 +190,7 @@ createApp({
         { key: 'bank', label: '银行' },
         { key: 'account', label: '卡号', inputmode: 'numeric' },
       ] },
-      { id: 'fenxiang', label: '纷享生活', savesAmount: true, fields: [
+      { id: 'fenxiang', label: '纷享生活', fields: [
         ...phonePayoutFields, { key: 'account', label: '卡号', inputmode: 'numeric' },
       ] },
     ];
@@ -490,7 +490,6 @@ createApp({
       route.value = value;
       if (value.page === 'alipay' || value.page === 'withdraw-account') {
         accountDraft.value = { ...boundAccounts[accountMethod.value?.id] };
-        accountError.value = '';
       }
       modal.value = '';
       chatPanel.value = '';
@@ -540,7 +539,7 @@ createApp({
     }
 
     const parentPages = {
-      wallet: 'profile', withdraw: 'profile', 'withdraw-request': 'withdraw',
+      wallet: 'profile', withdraw: 'profile', 'withdraw-request': 'wallet',
       'wallet-records': 'wallet', 'subsidy-wallet': 'wallet', settings: 'profile', 'native-check': 'profile',
       invite: 'profile', 'invited-people': 'invite', 'shop-order': 'shop-orders',
       'shop-orders': 'points-shop', 'draw-records': 'lucky-draw', 'sticker-store': 'stickers', square: 'discover',
@@ -571,7 +570,6 @@ createApp({
     const savedLocalNickname = ref('');
     const boundAccounts = reactive({});
     const accountDraft = ref({});
-    const accountError = ref('');
     const accountMethod = computed(() => payoutMethods.find(method => method.id === (page.value === 'alipay' ? 'alipay' : route.value.key)));
     const walletRecords = ref([
       walletEntry('withdrawal', -800, checkDate(demoToday, -1), '审核中'),
@@ -584,7 +582,7 @@ createApp({
       : walletRecords.value.filter(record => record.kind === walletRecordKind.value));
     const availableCents = computed(() => walletRecords.value.reduce((balance, record) => balance + record.cents, 8650));
     const walletBalance = computed(() => (availableCents.value / 100).toFixed(2));
-    const withdrawDraft = reactive({ amount: '', amountEdited: false, method: '', fields: {} });
+    const withdrawDraft = reactive({ amount: '', method: '', fields: {} });
     const selectedPayout = computed(() => payoutMethods.find(method => method.id === withdrawDraft.method));
     const withdrawError = ref('');
     const withdrawReceipt = ref(null);
@@ -1702,10 +1700,6 @@ createApp({
     function saveWithdrawAccount() {
       const method = accountMethod.value;
       if (!method || method.fields.some(field => !accountDraft.value[field.key])) return;
-      if (method.savesAmount && !withdrawalCents(accountDraft.value.amount)) {
-        accountError.value = '请输入有效金额';
-        return;
-      }
       boundAccounts[method.id] = { ...accountDraft.value };
       setNotice('保存成功');
       back('withdraw');
@@ -1732,17 +1726,15 @@ createApp({
       return copyText(demoInviteCode, '邀请码已复制');
     }
     function openWithdrawal() {
-      Object.assign(withdrawDraft, { amount: '', amountEdited: false, method: '', fields: {} });
+      Object.assign(withdrawDraft, { amount: '', method: '', fields: {} });
       withdrawError.value = '';
       withdrawReceipt.value = null;
       open('withdraw-request');
     }
     function chooseWithdrawMethod(method) {
       if (withdrawDraft.method !== method.id) {
-        const { amount = '', ...fields } = boundAccounts[method.id] ?? {};
         withdrawDraft.method = method.id;
-        withdrawDraft.fields = fields;
-        if (!withdrawDraft.amountEdited) withdrawDraft.amount = amount;
+        withdrawDraft.fields = { ...boundAccounts[method.id] };
       }
       modal.value = '';
       withdrawError.value = '';
@@ -1940,7 +1932,7 @@ createApp({
       composerInput, replyContext, editingMessage, clearMessageComposer, prepareMessageComposer,
       copyMessage, forwardMessage, recallMessage, deleteMessage, avatarInput, avatarPreview, pickAvatar, chooseAvatar, saveAvatar,
       walletBalance, withdrawDraft, withdrawError, withdrawReceipt, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
-      payoutMethods, boundAccounts, accountDraft, accountError, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
+      payoutMethods, boundAccounts, accountDraft, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
       inviteLabel, retryMessage,
       redDraft, redError, canSendRed, redCaption, redDetailStatus, openRedComposer, meetingError, openJoinMeeting, joinMeeting, leaveMeeting, endMeeting,
       meetingRooms, meetingDraft, meetingCreateError, currentMeeting, openMeetingCreate, createMeeting, meetingState, meetingStartTime,

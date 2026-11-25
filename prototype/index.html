@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#061333">
   <title>数信 IM · 演示原型</title>
   <link rel="icon" href="./assets/app-icon.png" type="image/png">
-  <link rel="stylesheet" href="./app.css?v=0.1.15">
+  <link rel="stylesheet" href="./app.css?v=0.1.18">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js?v=0.1.17"></script>
-  <script defer src="./app.js?v=0.1.15"></script>
+  <script defer src="./app.js?v=0.1.18"></script>
 </head>
 <body>
   <div class="workspace">
@@ -466,7 +466,10 @@
             </form>
           </template>
           <template v-else-if="page === 'wallet'">
-            <div class="glass-card wallet-card"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
+            <div class="glass-card wallet-card wallet-summary">
+              <div class="wallet-summary-balance"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
+              <button type="button" class="wallet-withdraw" @click="openWithdrawal"><app-icon name="Wallet"></app-icon>提现</button>
+            </div>
             <button class="row" @click="open('wallet-records')"><app-icon name="FileText"></app-icon><span class="grow">资金明细</span><app-icon name="ChevronRight"></app-icon></button>
           </template>
           <template v-else-if="page === 'wallet-records'">
@@ -492,7 +495,13 @@
             <div class="glass-card wallet-card"><span>可提现余额</span><strong>¥ {{ walletBalance }}</strong></div>
             <div v-if="withdrawReceipt" class="row"><span class="grow">审核中</span><strong class="balance">¥ {{ withdrawReceipt }}</strong></div>
             <form v-else class="form-stack" @submit.prevent="submitWithdrawal">
-              <div class="withdraw-amount"><label class="labeled">提现金额<input v-model.trim="withdrawDraft.amount" inputmode="decimal" @input="withdrawDraft.amountEdited = true"></label><button type="button" class="text-btn" @click="withdrawDraft.amount = walletBalance; withdrawDraft.amountEdited = true">全部提现</button></div>
+              <div class="labeled withdraw-amount">
+                <label for="withdraw-amount">提现金额</label>
+                <div class="withdraw-amount-control">
+                  <input id="withdraw-amount" v-model.trim="withdrawDraft.amount" inputmode="decimal">
+                  <button type="button" class="text-btn" @click="withdrawDraft.amount = walletBalance">全部提现</button>
+                </div>
+              </div>
               <button type="button" class="row" @click="modal = 'withdraw-method'"><span class="grow">提现方式</span><span>{{ selectedPayout?.label || '请选择提现方式' }}</span><app-icon name="ChevronRight"></app-icon></button>
               <label v-for="field in selectedPayout?.fields || []" :key="selectedPayout.id + '-' + field.key" class="labeled">{{ field.label }}<input v-model.trim="withdrawDraft.fields[field.key]" :inputmode="field.inputmode" required autocomplete="off"></label>
               <p v-if="withdrawError" class="error" role="alert">{{ withdrawError }}</p>
@@ -501,13 +510,10 @@
           </template>
           <template v-else-if="page === 'withdraw'">
             <button v-for="method in payoutMethods" :key="method.id" class="row" @click="openWithdrawAccount(method)"><span class="tile"><app-icon name="CreditCard"></app-icon></span><span class="grow">{{ method.label }}</span><span v-if="boundAccounts[method.id]?.account" class="muted">••••{{ boundAccounts[method.id].account.slice(-4) }}</span><app-icon name="ChevronRight"></app-icon></button>
-            <button class="row" @click="openWithdrawal"><app-icon name="Wallet"></app-icon><span class="grow">提现</span><app-icon name="ChevronRight"></app-icon></button>
           </template>
           <template v-else-if="page === 'alipay' || page === 'withdraw-account'">
             <form v-if="accountMethod" class="form-stack" @submit.prevent="saveWithdrawAccount">
               <label v-for="field in accountMethod.fields" :key="field.key" class="labeled">{{ field.label }}<input v-model.trim="accountDraft[field.key]" :inputmode="field.inputmode" required autocomplete="off"></label>
-              <label v-if="accountMethod.savesAmount" class="labeled">提现金额<input v-model.trim="accountDraft.amount" inputmode="decimal" required @input="accountError = ''"></label>
-              <p v-if="accountError" class="error" role="alert">{{ accountError }}</p>
               <button class="primary">保存</button>
             </form>
             <p v-else class="empty">请选择提现方式</p>

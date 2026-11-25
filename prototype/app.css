@@ -339,9 +339,13 @@ button.row:hover, .panel-option:hover { background-color: #eaf2fe; }
 .wallet-card { display: grid; gap: 5px; padding: 15px; margin: 8px 0; }
 .wallet-card span { font-size: 13px; color: #d3e8ff; }
 .wallet-card strong { font: 700 28px system-ui, sans-serif; }
-.withdraw-amount { display: flex; align-items: end; gap: 8px; }
-.withdraw-amount .labeled { flex: 1; min-width: 0; }
-.withdraw-amount .text-btn { flex-shrink: 0; min-height: 38px; }
+.wallet-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wallet-summary-balance { display: grid; gap: 5px; }
+.wallet-withdraw { display: inline-flex; align-items: center; flex-shrink: 0; gap: 6px; min-height: 38px; padding: 0 11px; border: 1px solid #92c5ff; border-radius: 10px; background: #0a347c; color: white; font-size: 13px; }
+.wallet-withdraw svg { width: 16px; height: 16px; }
+.withdraw-amount-control { position: relative; }
+.withdraw-amount-control input { padding-inline-end: 86px; }
+.withdraw-amount-control .text-btn { position: absolute; inset-block: 1px; inset-inline-end: 7px; padding-inline: 7px; white-space: nowrap; }
 .invite-code { text-align: center; letter-spacing: .12em; font: 700 30px ui-monospace, Consolas, monospace; margin: 35px 0; color: var(--blue); }
 .identity, .meeting-view { display: grid; justify-items: center; align-content: center; gap: 10px; padding: 22px; }
 .identity .avatar, .meeting-view .avatar { width: 58px; height: 58px; font-size: 21px; }
