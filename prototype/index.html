@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#061333">
   <title>数信 IM · 演示原型</title>
   <link rel="icon" href="./assets/app-icon.png" type="image/png">
-  <link rel="stylesheet" href="./app.css?v=0.1.18">
+  <link rel="stylesheet" href="./app.css?v=0.1.19">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js?v=0.1.17"></script>
   <script defer src="./app.js?v=0.1.18"></script>
@@ -166,7 +166,7 @@
               <button class="row profile-row" @click="item.page === 'password-menu' ? openPasswordModal() : open(item.page)"><app-icon :name="item.icon"></app-icon><span class="grow">{{ item.title }}</span><strong v-if="item.page === 'wallet'" class="balance">¥ {{ walletBalance }}</strong><app-icon name="ChevronRight"></app-icon></button>
             </template>
             <div class="row profile-row"><app-icon name="Info"></app-icon><span class="grow">版本号</span><span class="muted">{{ appVersion }}</span></div>
-            <button class="logout" @click="modal = 'logout'"><app-icon name="LogOut"></app-icon>退出登录</button>
+            <button class="secondary profile-logout" @click="modal = 'logout'"><app-icon name="LogOut"></app-icon>退出登录</button>
           </template>
 
           <template v-else-if="page === 'chat'">

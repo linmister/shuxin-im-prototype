@@ -268,6 +268,7 @@ button.row:hover, .panel-option:hover { background-color: #eaf2fe; }
 .personal .row-info span { color: #d0e8ff; }
 .personal .row-info strong { font-size: 16px; }
 .profile-row { min-height: 43px; font-size: 14px; }
+.profile-logout { margin-top: 12px; }
 .balance { color: var(--blue); font-size: 13px; white-space: nowrap; }
 .profile-shortcuts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 12px 0; }
 .profile-shortcuts button { display: grid; gap: 7px; justify-items: center; padding: 11px 3px; border: 1px solid #d7e7fc; border-radius: 13px; background: white; color: var(--ink); font-size: 12px; font-weight: 650; }
