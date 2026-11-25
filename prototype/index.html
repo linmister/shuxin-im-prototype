@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./app.css">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js"></script>
-  <script defer src="./app.js?v=0.1.11"></script>
+  <script defer src="./app.js?v=0.1.12"></script>
 </head>
 <body>
   <div class="workspace">
@@ -442,8 +442,6 @@
           <template v-else-if="page === 'wallet'">
             <div class="glass-card wallet-card"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
             <button class="row" @click="open('wallet-records')"><app-icon name="FileText"></app-icon><span class="grow">资金明细</span><app-icon name="ChevronRight"></app-icon></button>
-            <button class="row" @click="openWithdrawal"><app-icon name="Wallet"></app-icon><span class="grow">提现</span><app-icon name="ChevronRight"></app-icon></button>
-            <button class="row" @click="open('withdraw')"><app-icon name="CreditCard"></app-icon><span class="grow">提现方式</span><app-icon name="ChevronRight"></app-icon></button>
             <button class="row" @click="open('red-records')"><app-icon name="FileText"></app-icon><span class="grow">红包记录</span><app-icon name="ChevronRight"></app-icon></button>
           </template>
           <template v-else-if="page === 'wallet-records' || page === 'red-records'">
@@ -472,6 +470,7 @@
           </template>
           <template v-else-if="page === 'withdraw'">
             <button v-for="method in payoutMethods" :key="method.id" class="row" @click="openWithdrawAccount(method)"><span class="tile"><app-icon name="CreditCard"></app-icon></span><span class="grow">{{ method.label }}</span><span v-if="boundAccounts[method.id]?.account" class="muted">••••{{ boundAccounts[method.id].account.slice(-4) }}</span><app-icon name="ChevronRight"></app-icon></button>
+            <button class="row" @click="openWithdrawal"><app-icon name="Wallet"></app-icon><span class="grow">提现</span><app-icon name="ChevronRight"></app-icon></button>
           </template>
           <template v-else-if="page === 'alipay' || page === 'withdraw-account'">
             <form v-if="accountMethod" class="form-stack" @submit.prevent="saveWithdrawAccount">

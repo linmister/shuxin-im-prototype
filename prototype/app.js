@@ -536,6 +536,7 @@ createApp({
     }
 
     const parentPages = {
+      wallet: 'profile', withdraw: 'profile', 'withdraw-request': 'withdraw',
       'red-records': 'wallet', 'wallet-records': 'wallet', 'subsidy-wallet': 'wallet', settings: 'profile', 'native-check': 'profile',
       invite: 'profile', 'invited-people': 'invite', 'shop-order': 'shop-orders',
       'shop-orders': 'points-shop', 'draw-records': 'lucky-draw', 'sticker-store': 'stickers', square: 'discover',
