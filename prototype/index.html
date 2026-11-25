@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#061333">
   <title>数信 IM · 演示原型</title>
   <link rel="icon" href="./assets/app-icon.png" type="image/png">
-  <link rel="stylesheet" href="./app.css">
+  <link rel="stylesheet" href="./app.css?v=0.1.14">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js"></script>
-  <script defer src="./app.js?v=0.1.13"></script>
+  <script defer src="./app.js?v=0.1.14"></script>
 </head>
 <body>
   <div class="workspace">
@@ -430,13 +430,32 @@
             <div v-else class="row"><span class="row-info"><strong>{{ drawResult.prize.name }}</strong><span>{{ drawResult.date }}</span></span><span>消耗 {{ drawResult.cost }} 积分</span></div>
           </template>
           <template v-else-if="page === 'identity'">
-            <p v-if="identitySubmitted" class="empty" role="status">示例资料已提交</p>
+            <div v-if="identitySubmitted" class="form-stack">
+              <p class="empty" role="status">示例资料已提交</p>
+              <button class="secondary" @click="identitySubmitted = false">重新填写</button>
+            </div>
             <form v-else class="form-stack" @submit.prevent="submitIdentity">
               <p class="muted">请使用示例资料体验提交。</p>
-              <label class="labeled">真实姓名<input v-model.trim="identityDraft.name" required></label>
-              <label class="labeled">身份证号码<input v-model.trim="identityDraft.number" required></label>
-              <div class="actions"><button type="button" class="secondary" @click="identityDraft.front = !identityDraft.front">{{ identityDraft.front ? '正面示例已选' : '选择身份证正面示例' }}</button><button type="button" class="secondary" @click="identityDraft.back = !identityDraft.back">{{ identityDraft.back ? '反面示例已选' : '选择身份证反面示例' }}</button></div>
-              <button class="primary" :disabled="!identityDraft.front || !identityDraft.back">提交</button>
+              <label class="labeled">真实姓名<input v-model.trim="identityDraft.name" required autocomplete="off"></label>
+              <label class="labeled">身份证号码<input v-model.trim="identityDraft.number" required maxlength="18" autocomplete="off" @input="identityError = ''"></label>
+              <div class="identity-documents" role="group" aria-label="身份证照片">
+                <div v-for="(label, side) in identitySides" :key="side" class="identity-document">
+                  <strong>身份证{{ label }}</strong>
+                  <button v-if="identityDraft[side]" type="button" class="identity-photo" :aria-label="'预览身份证' + label" :disabled="!identityDraft[side].ready" @click="previewPicture(identityDraft[side])">
+                    <img :key="identityDraft[side].url" :src="identityDraft[side].url" alt="" @load="identityImageLoaded(side, $event, true)" @error="identityImageLoaded(side, $event, false)">
+                  </button>
+                  <div class="identity-photo identity-placeholder" v-else aria-hidden="true"><app-icon name="Image"></app-icon></div>
+                  <div class="identity-document-actions">
+                    <label class="identity-file text-btn">
+                      {{ identityDraft[side] ? '更换照片' : '选择照片' }}
+                      <input type="file" accept="image/*" :aria-label="(identityDraft[side] ? '更换身份证' : '选择身份证') + label" @change="chooseIdentityImage(side, $event)">
+                    </label>
+                    <button v-if="identityDraft[side]" type="button" class="text-btn" :aria-label="'移除身份证' + label" @click="removeIdentityImage(side)">移除</button>
+                  </div>
+                </div>
+              </div>
+              <p v-if="identityError" class="error" role="alert">{{ identityError }}</p>
+              <button class="primary" :disabled="!identityDraft.front?.ready || !identityDraft.back?.ready">提交</button>
             </form>
           </template>
           <template v-else-if="page === 'wallet'">

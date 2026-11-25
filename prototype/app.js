@@ -486,6 +486,7 @@ createApp({
       if (route.value.page !== value.page || listState) search.value = listState?.search ?? '';
       if (value.page === 'settings' && route.value.page !== 'settings') settingsSection.value = value.key || 'notifications';
       if (value.page !== 'messages' && chatSelecting.value) toggleChatSelection();
+      if (route.value.page === 'identity' && value.page !== 'identity') clearIdentityDraft();
       route.value = value;
       if (value.page === 'alipay' || value.page === 'withdraw-account') {
         accountDraft.value = { ...boundAccounts[accountMethod.value?.id] };
@@ -1478,7 +1479,9 @@ createApp({
     const drawResult = ref(null);
     const drawBusy = ref(false);
     const drawAngle = ref(0);
-    const identityDraft = reactive({ name: '', number: '', front: false, back: false });
+    const identitySides = { front: '正面', back: '反面' };
+    const identityDraft = reactive({ name: '', number: '', front: null, back: null });
+    const identityError = ref('');
     const identitySubmitted = ref(false);
     const signedDates = computed(() => new Set(checkRecords.value.map(record => record.date)));
     const signed = computed(() => signedDates.value.has(checkDay));
@@ -1549,10 +1552,44 @@ createApp({
         if (page.value === 'lucky-draw') modal.value = 'draw-result';
       }, reducedMotion ? 100 : 2150);
     }
+    function removeIdentityImage(side) {
+      if (identityDraft[side]) URL.revokeObjectURL(identityDraft[side].url);
+      identityDraft[side] = null;
+      identityError.value = '';
+    }
+    function clearIdentityDraft() {
+      Object.keys(identitySides).forEach(removeIdentityImage);
+      identityDraft.name = '';
+      identityDraft.number = '';
+    }
+    function chooseIdentityImage(side, event) {
+      const [file] = event.target.files;
+      event.target.value = '';
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        identityError.value = '请选择图片文件';
+        return;
+      }
+      removeIdentityImage(side);
+      identityDraft[side] = { url: URL.createObjectURL(file), ready: false };
+    }
+    function identityImageLoaded(side, event, ready) {
+      const image = identityDraft[side];
+      if (image?.url !== event.target.src) return;
+      if (ready) image.ready = true;
+      else {
+        removeIdentityImage(side);
+        identityError.value = '无法预览图片，请重新选择';
+      }
+    }
     function submitIdentity() {
-      if (!identityDraft.name || !identityDraft.number || !identityDraft.front || !identityDraft.back) return;
+      if (!identityDraft.name || !identityDraft.front?.ready || !identityDraft.back?.ready) return;
+      if (!/^\d{17}[\dXx]$/.test(identityDraft.number)) {
+        identityError.value = '请输入18位身份证号码';
+        return;
+      }
       identitySubmitted.value = true;
-      Object.assign(identityDraft, { name: '', number: '', front: false, back: false });
+      clearIdentityDraft();
     }
     const monthCount = computed(() => {
       const prefix = viewing.value.year + '-' + String(viewing.value.month+1).padStart(2, '0') + '-';
@@ -1918,7 +1955,7 @@ createApp({
       pointType, pointTypes, shownPoints,
       subsidyRecords, subsidySignedDates, subsidyClaimed, subsidyStreak, subsidyCycleDays, subsidyMonthCount,
       subsidyAmount, subsidyBalance, checkInForSubsidy, claimSubsidyReward,
-      identityDraft, identitySubmitted, submitIdentity,
+      identitySides, identityDraft, identityError, identitySubmitted, chooseIdentityImage, removeIdentityImage, identityImageLoaded, submitIdentity,
       refreshCaptcha, lastMessage, enterChat, sendMessage, toggleChatPanel, pickFile, attachFile, openAttachment,
       sendRed, selectEnvelope, canClaimRed, claimRed, addFriend, removeRequest, acceptFriend, viewMonth, checkIn, editProfile,
       saveProfile, copyInvite, copyText, editPassword, savePassword,
