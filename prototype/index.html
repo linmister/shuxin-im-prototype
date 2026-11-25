@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#061333">
   <title>数信 IM · 演示原型</title>
   <link rel="icon" href="./assets/app-icon.png" type="image/png">
-  <link rel="stylesheet" href="./app.css?v=0.1.20">
+  <link rel="stylesheet" href="./app.css?v=0.1.27">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js?v=0.1.17"></script>
-  <script defer src="./app.js?v=0.1.26"></script>
+  <script defer src="./app.js?v=0.1.27"></script>
 </head>
 <body>
   <div class="workspace">
@@ -468,13 +468,6 @@
               <button class="primary" :disabled="!identityDraft.front?.ready || !identityDraft.back?.ready">提交</button>
             </form>
           </template>
-          <template v-else-if="page === 'wallet'">
-            <div class="glass-card wallet-card wallet-summary">
-              <div class="wallet-summary-balance"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
-              <button type="button" class="wallet-withdraw" @click="openWithdrawal"><app-icon name="Wallet"></app-icon>提现</button>
-            </div>
-            <button class="row" @click="open('wallet-records')"><app-icon name="FileText"></app-icon><span class="grow">资金明细</span><app-icon name="ChevronRight"></app-icon></button>
-          </template>
           <template v-else-if="page === 'wallet-records'">
             <div class="point-filters">
               <select v-model="walletRecordKind" aria-label="资金明细筛选">
@@ -494,10 +487,14 @@
             <div v-for="record in subsidyRecords" :key="record.date + record.kind" class="row"><span class="row-info"><strong>{{ record.kind === 'reward' ? '30 天签到奖励' : '签到发放' }}</strong><span>{{ record.date }}</span></span><strong class="balance">+¥ {{ money(subsidyAmount(record.kind)) }}</strong></div>
             <p v-if="!subsidyRecords.length" class="empty">暂无补贴明细</p>
           </template>
-          <template v-else-if="page === 'withdraw-request'">
-            <div class="glass-card wallet-card"><span>可提现余额</span><strong>¥ {{ walletBalance }}</strong></div>
+          <template v-else-if="page === 'wallet' || page === 'withdraw-request'">
+            <div v-if="page === 'wallet'" class="glass-card wallet-card wallet-summary">
+              <div class="wallet-summary-balance"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
+              <button type="button" class="wallet-card-action" @click="open('wallet-records')"><app-icon name="FileText"></app-icon>资金明细</button>
+            </div>
+            <div v-else class="glass-card wallet-card"><span>可提现余额</span><strong>¥ {{ walletBalance }}</strong></div>
             <div v-if="withdrawReceipt" class="row"><span class="grow">审核中</span><strong class="balance">¥ {{ withdrawReceipt }}</strong></div>
-            <form v-else class="form-stack" @submit.prevent="submitWithdrawal">
+            <form v-else class="form-stack withdrawal-form" @submit.prevent="submitWithdrawal">
               <div class="labeled withdraw-amount">
                 <label for="withdraw-amount">提现金额</label>
                 <div class="withdraw-amount-control">
@@ -512,7 +509,7 @@
                 <app-icon name="ChevronRight"></app-icon>
               </button>
               <p v-if="withdrawError" class="error" role="alert">{{ withdrawError }}</p>
-              <button class="primary">确认提现</button>
+              <button class="primary" :disabled="!withdrawDraft.amount || !selectedPayout">确认提现</button>
             </form>
           </template>
           <template v-else-if="page === 'withdraw'">

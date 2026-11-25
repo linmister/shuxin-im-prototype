@@ -490,6 +490,7 @@ createApp({
       if (value.page === 'settings' && route.value.page !== 'settings') settingsSection.value = value.key || 'notifications';
       if (value.page !== 'messages' && chatSelecting.value) toggleChatSelection();
       if (route.value.page === 'identity' && value.page !== 'identity') clearIdentityDraft();
+      if (value.page === 'wallet' && route.value.page === 'profile') resetWithdrawal();
       route.value = value;
       if (value.page === 'alipay' || value.page === 'withdraw-account') {
         accountDraft.value = { ...boundAccounts[accountMethod.value?.id] };
@@ -1732,11 +1733,10 @@ createApp({
     function copyInvite() {
       return copyText(demoInviteCode, '邀请码已复制');
     }
-    function openWithdrawal() {
+    function resetWithdrawal() {
       Object.assign(withdrawDraft, { amount: '', method: '' });
       withdrawError.value = '';
       withdrawReceipt.value = null;
-      open('withdraw-request');
     }
     function hasPayoutAccount(method) {
       return method.fields.every(field => Boolean(boundAccounts[method.id]?.[field.key]));
@@ -1954,7 +1954,7 @@ createApp({
       selectingMessages, selectedMessageIds, allMessagesSelected, startMessageSelection, exitMessageSelection, toggleMessageSelection, selectAllMessages, openMessageForward,
       composerInput, replyContext, editingMessage, clearMessageComposer, prepareMessageComposer,
       copyMessage, forwardMessage, recallMessage, deleteMessage, avatarInput, avatarPreview, pickAvatar, chooseAvatar, saveAvatar,
-      walletBalance, withdrawDraft, withdrawError, withdrawReceipt, pendingPayout, payoutAccountLabel, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
+      walletBalance, withdrawDraft, withdrawError, withdrawReceipt, pendingPayout, payoutAccountLabel, chooseWithdrawMethod, submitWithdrawal,
       payoutMethods, accountDraft, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
       inviteLabel, retryMessage,
       redDraft, redError, canSendRed, redCaption, redDetailStatus, openRedComposer, meetingError, openJoinMeeting, joinMeeting, leaveMeeting, endMeeting,

@@ -345,8 +345,9 @@ button.row:hover, .panel-option:hover { background-color: #eaf2fe; }
 .wallet-card strong { font: 700 28px system-ui, sans-serif; }
 .wallet-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .wallet-summary-balance { display: grid; gap: 5px; }
-.wallet-withdraw { display: inline-flex; align-items: center; flex-shrink: 0; gap: 6px; min-height: 38px; padding: 0 11px; border: 1px solid #92c5ff; border-radius: 10px; background: #0a347c; color: white; font-size: 13px; }
-.wallet-withdraw svg { width: 16px; height: 16px; }
+.wallet-card-action { display: inline-flex; align-items: center; flex-shrink: 0; gap: 6px; min-height: 38px; padding: 0 11px; border: 1px solid #92c5ff; border-radius: 10px; background: #0a347c; color: white; font-size: 13px; }
+.wallet-card-action svg { width: 16px; height: 16px; }
+.withdrawal-form .primary:disabled { background: #e3e9f1; border-color: #d5deea; color: #546784; box-shadow: none; opacity: 1; }
 .withdraw-amount-control { position: relative; }
 .withdraw-amount-control input { padding-inline-end: 86px; }
 .withdraw-amount-control .text-btn { position: absolute; inset-block: 1px; inset-inline-end: 7px; padding-inline: 7px; white-space: nowrap; }
