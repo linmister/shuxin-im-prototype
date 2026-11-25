@@ -24,7 +24,7 @@ const titles = {
   group: '国家数据集团', 'check-in': '签到', profile: '我的',
   chat: '聊天', contact: '个人信息', groups: '群组', requests: '新的朋友', 'add-friend': '搜索',
   promo: '宣传片', news: '新闻资料', 'check-records': '积分明细', 'check-rule': '签到规则',
-  'profile-edit': '编辑资料', wallet: '钱包', 'wallet-records': '资金明细', 'subsidy-wallet': '全民补贴钱包', 'red-records': '红包记录', withdraw: '提现方式', alipay: '支付宝',
+  'profile-edit': '编辑资料', wallet: '钱包', 'wallet-records': '资金明细', 'subsidy-wallet': '全民补贴钱包', withdraw: '提现方式', alipay: '支付宝',
   invite: '我的邀请码', meeting: '会议', 'password-menu': '修改密码', password: '修改密码',
   'pay-password': '修改支付密码', settings: '通知 · 设备 · 网络', notifications: '通知', network: '网络', device: '设备',
   support: '客服', 'chat-tools': '更多', 'chat-history': '搜索',
@@ -83,12 +83,14 @@ const news = [
 ];
 const week = ['日', '一', '二', '三', '四', '五', '六'];
 const demoToday = '2026-11-24';
+const walletRecordLabels = { 'red-sent': '发出红包', 'red-received': '领取红包', withdrawal: '提现' };
 function checkDate(day, offset = 0) {
   const date = new Date(day + 'T00:00:00Z');
   date.setUTCDate(date.getUTCDate() + offset);
   return date.toISOString().slice(0, 10);
 }
 let messageId = 0;
+const walletEntry = (kind, cents, date = demoToday, status = '') => ({ id: ++messageId, kind, cents, date, status });
 const item = (text, mine = false, kind = 'text', extra = {}) => ({ id: ++messageId, text, mine, kind, ...extra });
 const fileSample = () => item('评审资料目录.pdf', false, 'file', {
   size: 'PDF',
@@ -98,6 +100,7 @@ const fileSample = () => item('评审资料目录.pdf', false, 'file', {
 function readRoute() {
   const [page = '', key = ''] = location.hash.slice(1).split('/');
   if (page === 'invite-friend' || page === 'invite-link') return { page: 'invite', key: '' };
+  if (page === 'red-records') return { page: 'wallet-records', key: '' };
   if (settingsTabs.includes(page)) return { page: 'settings', key: page };
   return Object.hasOwn(titles, page) ? { page, key } : { page: 'login', key: '' };
 }
@@ -537,7 +540,7 @@ createApp({
 
     const parentPages = {
       wallet: 'profile', withdraw: 'profile', 'withdraw-request': 'withdraw',
-      'red-records': 'wallet', 'wallet-records': 'wallet', 'subsidy-wallet': 'wallet', settings: 'profile', 'native-check': 'profile',
+      'wallet-records': 'wallet', 'subsidy-wallet': 'wallet', settings: 'profile', 'native-check': 'profile',
       invite: 'profile', 'invited-people': 'invite', 'shop-order': 'shop-orders',
       'shop-orders': 'points-shop', 'draw-records': 'lucky-draw', 'sticker-store': 'stickers', square: 'discover',
       'square-search': 'square', 'square-notices': 'square', 'square-post': 'square',
@@ -569,8 +572,15 @@ createApp({
     const accountDraft = ref({});
     const accountError = ref('');
     const accountMethod = computed(() => payoutMethods.find(method => method.id === (page.value === 'alipay' ? 'alipay' : route.value.key)));
-    const walletRecords = ref([]);
-    const walletRedRecords = computed(() => walletRecords.value.filter(record => record.kind === 'red'));
+    const walletRecords = ref([
+      walletEntry('withdrawal', -800, checkDate(demoToday, -1), '审核中'),
+      walletEntry('red-sent', -450, checkDate(demoToday, -2)),
+      walletEntry('red-received', 1250, checkDate(demoToday, -3)),
+    ]);
+    const walletRecordKind = ref('all');
+    const shownWalletRecords = computed(() => walletRecordKind.value === 'all'
+      ? walletRecords.value
+      : walletRecords.value.filter(record => record.kind === walletRecordKind.value));
     const availableCents = computed(() => walletRecords.value.reduce((balance, record) => balance + record.cents, 8650));
     const walletBalance = computed(() => (availableCents.value / 100).toFixed(2));
     const withdrawDraft = reactive({ amount: '', amountEdited: false, method: '', fields: {} });
@@ -1343,7 +1353,7 @@ createApp({
         return;
       }
       if (cents > availableCents.value) { redError.value = '余额不足'; return; }
-      walletRecords.value.unshift({ id: ++messageId, kind: 'red', label: '发出红包', cents: -cents });
+      walletRecords.value.unshift(walletEntry('red-sent', -cents));
       append(item(direct ? '红包' : '群红包', true, 'red', { direct, count, cents, sender: profile.nickname, note: redDraft.note.trim(), claims: [] }));
       back('messages');
     }
@@ -1375,7 +1385,7 @@ createApp({
       packet.receivedCents = cents;
       packet.claimed = true;
       packet.claims.push({ name: profile.nickname, cents });
-      walletRecords.value.unshift({ id: ++messageId, kind: 'red', label: '领取红包', cents });
+      walletRecords.value.unshift(walletEntry('red-received', cents));
       modal.value = 'receive-red';
     }
     const redReceivedTotal = computed(() => selectedRed.value?.claims.reduce((sum, entry) => sum + entry.cents, 0) ?? 0);
@@ -1708,7 +1718,7 @@ createApp({
       if (cents > availableCents.value) { withdrawError.value = '余额不足'; return; }
       if (!selectedPayout.value) { withdrawError.value = '请选择提现方式'; return; }
       if (selectedPayout.value.fields.some(field => !withdrawDraft.fields[field.key])) return;
-      walletRecords.value.unshift({ id: ++messageId, kind: 'withdrawal', label: '提现', status: '审核中', cents: -cents });
+      walletRecords.value.unshift(walletEntry('withdrawal', -cents, demoToday, '审核中'));
       withdrawReceipt.value = (cents / 100).toFixed(2);
       withdrawError.value = '';
       modal.value = 'withdraw-success';
@@ -1902,7 +1912,7 @@ createApp({
       voiceMode, voiceElapsed, playingVoiceId, toggleVoiceMode, startVoiceGesture, stopVoiceCapture, releaseVoiceCapture, playVoice,
       meetingCode, signed, amount, streak, news, activeNews,
       week, calendar, calendarTitle, checkBusy, monthCount, cycleDays, emojis, open, back, switchTab, login, logout, register,
-      walletRecords, walletRedRecords, redReceivedTotal, money, shopCategories, shopCategory, shownShopItems, shopProduct, shopPhoto,
+      walletRecordLabels, walletRecordKind, shownWalletRecords, redReceivedTotal, money, shopCategories, shopCategory, shownShopItems, shopProduct, shopPhoto,
       redemptions, shopOrder, redeemItem, shippingDraft, shippingError, selectRedemption, redeemPoints,
       drawPrizes, drawResult, drawBusy, drawAngle, spinWheel,
       pointType, pointTypes, shownPoints,

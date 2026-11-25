@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./app.css">
   <script defer src="./vendor/vue.global.prod.js"></script>
   <script defer src="./vendor/icons.js"></script>
-  <script defer src="./app.js?v=0.1.12"></script>
+  <script defer src="./app.js?v=0.1.13"></script>
 </head>
 <body>
   <div class="workspace">
@@ -442,14 +442,19 @@
           <template v-else-if="page === 'wallet'">
             <div class="glass-card wallet-card"><span>账户余额</span><strong>¥ {{ walletBalance }}</strong></div>
             <button class="row" @click="open('wallet-records')"><app-icon name="FileText"></app-icon><span class="grow">资金明细</span><app-icon name="ChevronRight"></app-icon></button>
-            <button class="row" @click="open('red-records')"><app-icon name="FileText"></app-icon><span class="grow">红包记录</span><app-icon name="ChevronRight"></app-icon></button>
           </template>
-          <template v-else-if="page === 'wallet-records' || page === 'red-records'">
-            <p v-if="!(page === 'wallet-records' ? walletRecords : walletRedRecords).length" class="empty">{{ page === 'wallet-records' ? '暂无资金明细' : '暂无红包记录' }}</p>
-            <div v-for="record in page === 'wallet-records' ? walletRecords : walletRedRecords" :key="record.id" class="row">
-              <span class="row-info"><strong>{{ record.label }}</strong><span v-if="record.status">{{ record.status }}</span></span>
+          <template v-else-if="page === 'wallet-records'">
+            <div class="point-filters">
+              <select v-model="walletRecordKind" aria-label="资金明细筛选">
+                <option value="all">全部</option>
+                <option v-for="(label, kind) in walletRecordLabels" :key="kind" :value="kind">{{ label }}</option>
+              </select>
+            </div>
+            <div v-for="record in shownWalletRecords" :key="record.id" class="row">
+              <span class="row-info"><strong>{{ walletRecordLabels[record.kind] }}</strong><span>{{ record.date }}<template v-if="record.status"> · {{ record.status }}</template></span></span>
               <strong class="balance">{{ record.cents < 0 ? '−' : '+' }}¥ {{ money(Math.abs(record.cents)) }}</strong>
             </div>
+            <p v-if="!shownWalletRecords.length" class="empty">暂无资金明细</p>
           </template>
           <template v-else-if="page === 'subsidy-wallet'">
             <div class="glass-card wallet-card"><span>累计补贴</span><strong>¥ {{ money(subsidyBalance) }}</strong><span>每日签到即可获得补贴。补贴为独立账户，暂不支持提现与转账。</span></div>
