@@ -1953,7 +1953,7 @@ createApp({
       composerInput, replyContext, editingMessage, clearMessageComposer, prepareMessageComposer,
       copyMessage, forwardMessage, recallMessage, deleteMessage, avatarInput, avatarPreview, pickAvatar, chooseAvatar, saveAvatar,
       walletBalance, withdrawDraft, withdrawError, withdrawReceipt, pendingPayout, payoutAccountLabel, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
-      payoutMethods, boundAccounts, accountDraft, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
+      payoutMethods, accountDraft, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
       inviteLabel, retryMessage,
       redDraft, redError, canSendRed, redCaption, redDetailStatus, openRedComposer, meetingError, openJoinMeeting, joinMeeting, leaveMeeting, endMeeting,
       meetingRooms, meetingDraft, meetingCreateError, currentMeeting, openMeetingCreate, createMeeting, meetingState, meetingStartTime,
