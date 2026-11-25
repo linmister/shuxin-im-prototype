@@ -429,7 +429,7 @@ createApp({
       attachment: activeAttachment.value?.text, 'message-menu': currentMessage.value?.text,
       'conversation-menu': '会话操作', 'remove-conversation': '删除 1 个聊天？',
       'delete-message': `删除 ${selectedMessageIds.size} 条消息`, 'avatar-source': '头像', 'avatar-crop': '裁剪头像',
-      'withdraw-method': '请选择提现方式', 'withdraw-success': '提现申请已提交', 'join-meeting': '加入会议',
+      'withdraw-method': '请选择提现方式', 'withdraw-account-required': '请补充提现信息', 'withdraw-success': '提现申请已提交', 'join-meeting': '加入会议',
       'end-meeting': '确认结束当前会议吗？',
       'reset-notifications': '重置所有通知设置',
       'end-other-devices': '确定要终止所有其他设备的会话吗？这将使其他设备上的登录失效。',
@@ -493,6 +493,8 @@ createApp({
       route.value = value;
       if (value.page === 'alipay' || value.page === 'withdraw-account') {
         accountDraft.value = { ...boundAccounts[accountMethod.value?.id] };
+      } else {
+        pendingPayout.value = null;
       }
       modal.value = '';
       chatPanel.value = '';
@@ -585,7 +587,8 @@ createApp({
       : walletRecords.value.filter(record => record.kind === walletRecordKind.value));
     const availableCents = computed(() => walletRecords.value.reduce((balance, record) => balance + record.cents, 8650));
     const walletBalance = computed(() => (availableCents.value / 100).toFixed(2));
-    const withdrawDraft = reactive({ amount: '', method: '', fields: {} });
+    const withdrawDraft = reactive({ amount: '', method: '' });
+    const pendingPayout = ref(null);
     const selectedPayout = computed(() => payoutMethods.find(method => method.id === withdrawDraft.method));
     const withdrawError = ref('');
     const withdrawReceipt = ref(null);
@@ -1704,6 +1707,7 @@ createApp({
       const method = accountMethod.value;
       if (!method || method.fields.some(field => !accountDraft.value[field.key])) return;
       boundAccounts[method.id] = { ...accountDraft.value };
+      if (pendingPayout.value?.id === method.id) withdrawDraft.method = method.id;
       setNotice('保存成功');
       back('withdraw');
     }
@@ -1729,18 +1733,24 @@ createApp({
       return copyText(demoInviteCode, '邀请码已复制');
     }
     function openWithdrawal() {
-      Object.assign(withdrawDraft, { amount: '', method: '', fields: {} });
+      Object.assign(withdrawDraft, { amount: '', method: '' });
       withdrawError.value = '';
       withdrawReceipt.value = null;
       open('withdraw-request');
     }
+    function hasPayoutAccount(method) {
+      return method.fields.every(field => Boolean(boundAccounts[method.id]?.[field.key]));
+    }
     function chooseWithdrawMethod(method) {
-      if (withdrawDraft.method !== method.id) {
-        withdrawDraft.method = method.id;
-        withdrawDraft.fields = { ...boundAccounts[method.id] };
-      }
-      modal.value = '';
       withdrawError.value = '';
+      if (!hasPayoutAccount(method)) {
+        pendingPayout.value = method;
+        modal.value = 'withdraw-account-required';
+        return;
+      }
+      pendingPayout.value = null;
+      withdrawDraft.method = method.id;
+      modal.value = '';
     }
     function withdrawalCents(amount) {
       return /^\d{1,6}(?:\.\d{1,2})?$/.test(amount) ? Math.round(Number(amount) * 100) : 0;
@@ -1751,7 +1761,10 @@ createApp({
       if (cents < 1) { withdrawError.value = '请输入有效金额'; return; }
       if (cents > availableCents.value) { withdrawError.value = '余额不足'; return; }
       if (!selectedPayout.value) { withdrawError.value = '请选择提现方式'; return; }
-      if (selectedPayout.value.fields.some(field => !withdrawDraft.fields[field.key])) return;
+      if (!hasPayoutAccount(selectedPayout.value)) {
+        chooseWithdrawMethod(selectedPayout.value);
+        return;
+      }
       walletRecords.value.unshift(walletEntry('withdrawal', -cents, demoToday, '审核中'));
       withdrawReceipt.value = (cents / 100).toFixed(2);
       withdrawError.value = '';
@@ -1934,7 +1947,7 @@ createApp({
       selectingMessages, selectedMessageIds, allMessagesSelected, startMessageSelection, exitMessageSelection, toggleMessageSelection, selectAllMessages, openMessageForward,
       composerInput, replyContext, editingMessage, clearMessageComposer, prepareMessageComposer,
       copyMessage, forwardMessage, recallMessage, deleteMessage, avatarInput, avatarPreview, pickAvatar, chooseAvatar, saveAvatar,
-      walletBalance, withdrawDraft, withdrawError, withdrawReceipt, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
+      walletBalance, withdrawDraft, withdrawError, withdrawReceipt, pendingPayout, openWithdrawal, chooseWithdrawMethod, submitWithdrawal,
       payoutMethods, boundAccounts, accountDraft, accountMethod, selectedPayout, openWithdrawAccount, saveWithdrawAccount,
       inviteLabel, retryMessage,
       redDraft, redError, canSendRed, redCaption, redDetailStatus, openRedComposer, meetingError, openJoinMeeting, joinMeeting, leaveMeeting, endMeeting,
