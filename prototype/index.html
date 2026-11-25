@@ -443,7 +443,6 @@
               <button class="secondary" @click="identitySubmitted = false">重新填写</button>
             </div>
             <form v-else class="form-stack" @submit.prevent="submitIdentity">
-              <p class="muted">请使用示例资料体验提交。</p>
               <label class="labeled">真实姓名<input v-model.trim="identityDraft.name" required autocomplete="off"></label>
               <label class="labeled">身份证号码<input v-model.trim="identityDraft.number" required maxlength="18" autocomplete="off" @input="identityError = ''"></label>
               <div class="identity-documents" role="group" aria-label="身份证照片">
