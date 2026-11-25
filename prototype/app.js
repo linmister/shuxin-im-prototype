@@ -1744,7 +1744,9 @@ createApp({
     function payoutAccountLabel(method) {
       if (!hasPayoutAccount(method)) return '未绑定';
       const account = boundAccounts[method.id].account;
-      return account.length > 4 ? account.slice(0, 4) + '••••' : '••••';
+      const characters = Array.from(account);
+      if (characters.length <= 7) return '****';
+      return `${characters.slice(0, 3).join('')}****${characters.slice(-4).join('')}`;
     }
     function chooseWithdrawMethod(method) {
       withdrawError.value = '';
